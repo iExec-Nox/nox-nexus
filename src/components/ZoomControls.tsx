@@ -33,10 +33,10 @@ export default function ZoomControls({ sigma }: ZoomControlsProps) {
 
   return (
     <div className="absolute bottom-6 right-6 flex flex-col gap-1.5 z-10">
-      <button onClick={handleZoomIn} className={btnClass} title="Zoom in">
+      <button onClick={handleZoomOut} className={btnClass} title="Zoom in">
         <ZoomIn size={14} />
       </button>
-      <button onClick={handleZoomOut} className={btnClass} title="Zoom out">
+      <button onClick={handleZoomIn} className={btnClass} title="Zoom out">
         <ZoomOut size={14} />
       </button>
       <button onClick={handleReset} className={btnClass} title="Reset view">

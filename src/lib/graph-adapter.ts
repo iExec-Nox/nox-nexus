@@ -16,7 +16,8 @@ function formatLabel(id: string): string {
 }
 
 function computeNodeSize(connectionCount: number): number {
-  const size = NODE_SIZE_BASE + connectionCount * NODE_SIZE_PER_CONNECTION;
+  // sqrt scale: visually, circle area grows linearly with connections
+  const size = NODE_SIZE_BASE + Math.sqrt(connectionCount) * NODE_SIZE_PER_CONNECTION * 2;
   return Math.min(size, NODE_SIZE_MAX);
 }
 
@@ -38,7 +39,8 @@ export function buildGraph(handles: Handle[]): {
   // Second pass: build nodes
   for (const handle of handles) {
     const connectionCount = connectionCounts.get(handle.id) ?? 0;
-    const color = getOperatorColor(handle.operator);
+    const operator = handle.operator || "EncryptedInput";
+    const color = getOperatorColor(operator);
 
     const node: GraphNode = {
       id: handle.id,
@@ -47,7 +49,7 @@ export function buildGraph(handles: Handle[]): {
       y: Math.random() * 1000,
       size: computeNodeSize(connectionCount),
       color,
-      operator: handle.operator,
+      operator,
       isPubliclyDecryptable: handle.isPubliclyDecryptable,
       connectionCount,
     };

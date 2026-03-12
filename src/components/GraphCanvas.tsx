@@ -40,13 +40,13 @@ function drawDarkLabel(
 
   context.beginPath();
   context.roundRect(x, y, w, h, radius);
-  context.fillStyle = "rgba(10, 10, 18, 0.85)";
+  context.fillStyle = "rgba(20, 20, 27, 0.9)";
   context.fill();
-  context.strokeStyle = "rgba(30, 30, 58, 0.6)";
+  context.strokeStyle = "rgba(60, 63, 68, 0.6)";
   context.lineWidth = 0.5;
   context.stroke();
 
-  context.fillStyle = "#c8d0dc";
+  context.fillStyle = "#d3d3d8";
   context.fillText(data.label, x + px, data.y + size / 3);
 }
 
@@ -84,13 +84,13 @@ function drawDarkHover(
 
   context.beginPath();
   context.roundRect(x, y, w, h, radius);
-  context.fillStyle = "rgba(10, 10, 18, 0.92)";
+  context.fillStyle = "rgba(20, 20, 27, 0.95)";
   context.fill();
   context.strokeStyle = `${data.color}60`;
   context.lineWidth = 1;
   context.stroke();
 
-  context.fillStyle = "#e2e8f0";
+  context.fillStyle = "#ffffff";
   context.fillText(data.label, x + px, data.y + fontSize / 3);
 }
 
@@ -102,6 +102,7 @@ interface GraphCanvasProps {
   selectedNodeId: string | null;
   searchQuery: string;
   highlightedOperators: string[];
+  focusNodeId: string | null;
 }
 
 function truncateHandle(id: string): string {
@@ -111,8 +112,8 @@ function truncateHandle(id: string): string {
   return `0x${clean.slice(0, 6)}...${clean.slice(-4)}`;
 }
 
-const DIM_COLOR = "#2a2a3a";
-const DIM_EDGE_COLOR = "#1a1a28";
+const DIM_COLOR = "#202127";
+const DIM_EDGE_COLOR = "#555568";
 
 export default function GraphCanvas({
   nodes,
@@ -122,6 +123,7 @@ export default function GraphCanvas({
   selectedNodeId,
   searchQuery,
   highlightedOperators,
+  focusNodeId,
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaRef = useRef<Sigma | null>(null);
@@ -178,7 +180,7 @@ export default function GraphCanvas({
         if (!graph.hasEdge(edge.id)) {
           graph.addEdgeWithKey(edge.id, edge.source, edge.target, {
             size: edge.size ?? 1,
-            color: edge.color ?? "#1a1a2e",
+            color: edge.color ?? "#2a2a35",
             type: "curve",
           });
         }
@@ -216,8 +218,8 @@ export default function GraphCanvas({
       labelSize: 11,
       labelDensity: 0.03,
       labelGridCellSize: 250,
-      labelColor: { color: "#c8d0dc" },
-      defaultEdgeColor: "#1a1a2e",
+      labelColor: { color: "#d3d3d8" },
+      defaultEdgeColor: "#2a2a35",
       defaultNodeColor: "#6b7280",
       renderLabels: false,
       labelRenderedSizeThreshold: 6,
@@ -250,6 +252,7 @@ export default function GraphCanvas({
           } else {
             res.color = DIM_COLOR;
             res.label = "";
+            res.size = (data.size ?? 2) * 0.6;
           }
           return res;
         }
@@ -263,6 +266,7 @@ export default function GraphCanvas({
           } else {
             res.color = DIM_COLOR;
             res.label = "";
+            res.size = (data.size ?? 2) * 0.6;
           }
           return res;
         }
@@ -288,17 +292,24 @@ export default function GraphCanvas({
         const tgt = graph.target(edge);
 
         if (hovered) {
-          if (src !== hovered && tgt !== hovered) {
+          if (src === hovered || tgt === hovered) {
+            const baseColor = (res.color ?? "").replace(/[0-9a-f]{2}$/i, "");
+            res.color = baseColor || res.color;
+            res.size = 2;
+          } else {
             res.color = DIM_EDGE_COLOR;
-            res.hidden = true;
           }
           return res;
         }
 
         if (currentSelectedNodeId) {
-          if (src !== currentSelectedNodeId && tgt !== currentSelectedNodeId) {
+          if (src === currentSelectedNodeId || tgt === currentSelectedNodeId) {
+            // Boost connected edges: remove alpha suffix, increase size
+            const baseColor = (res.color ?? "").replace(/[0-9a-f]{2}$/i, "");
+            res.color = baseColor || res.color;
+            res.size = 2;
+          } else {
             res.color = DIM_EDGE_COLOR;
-            res.hidden = true;
           }
           return res;
         }
@@ -326,7 +337,6 @@ export default function GraphCanvas({
             !(tgtSearchMatch && tgtOperatorMatch)
           ) {
             res.color = DIM_EDGE_COLOR;
-            res.hidden = true;
           }
         }
 
@@ -353,6 +363,42 @@ export default function GraphCanvas({
 
     renderer.on("clickStage", () => {
       onBackgroundClickRef.current();
+    });
+
+    // --- Drag & Drop ---
+    renderer.on("downNode", (e) => {
+      isDraggingRef.current = true;
+      draggedNodeRef.current = e.node;
+      // Disable camera drag while we drag a node
+      renderer.getCamera().disable();
+    });
+
+    renderer.getMouseCaptor().on("mousemovebody", (e) => {
+      if (!isDraggingRef.current || !draggedNodeRef.current) return;
+      // Map viewport coords to graph coords
+      const pos = renderer.viewportToGraph(e);
+      graph.setNodeAttribute(draggedNodeRef.current, "x", pos.x);
+      graph.setNodeAttribute(draggedNodeRef.current, "y", pos.y);
+      // Prevent sigma from showing hover while dragging
+      e.preventSigmaDefault();
+      e.original.preventDefault();
+      e.original.stopPropagation();
+    });
+
+    const handleMouseUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        draggedNodeRef.current = null;
+        renderer.getCamera().enable();
+      }
+    };
+    renderer.getMouseCaptor().on("mouseup", handleMouseUp);
+    renderer.getMouseCaptor().on("mousedown", () => {
+      // If clicking on stage (not a node), ensure drag state is clean
+      if (hoveredNodeRef.current === null) {
+        isDraggingRef.current = false;
+        draggedNodeRef.current = null;
+      }
     });
 
     // Detect connected components and lay out each one independently
@@ -491,9 +537,74 @@ export default function GraphCanvas({
       }
     }
 
+    // --- Animated settling ---
+    // Save final positions, then scramble and animate toward them
+    const finalPositions = new Map<string, { x: number; y: number }>();
+    graph.forEachNode((node) => {
+      finalPositions.set(node, {
+        x: graph.getNodeAttribute(node, "x") as number,
+        y: graph.getNodeAttribute(node, "y") as number,
+      });
+    });
+
+    // Compute graph center for initial scatter
+    let gcx = 0, gcy = 0;
+    finalPositions.forEach((pos) => { gcx += pos.x; gcy += pos.y; });
+    gcx /= finalPositions.size || 1;
+    gcy /= finalPositions.size || 1;
+
+    // Start nodes near graph center with jitter
+    const spreadRadius = 200;
+    graph.forEachNode((node) => {
+      graph.setNodeAttribute(node, "x", gcx + (Math.random() - 0.5) * spreadRadius);
+      graph.setNodeAttribute(node, "y", gcy + (Math.random() - 0.5) * spreadRadius);
+    });
+
     renderer.refresh();
 
+    // Animate from scrambled to final positions
+    const ANIM_DURATION = 6000; // ms
+    const startTime = performance.now();
+
+    function easeOutCubic(t: number): number {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    // Capture start positions
+    const startPositions = new Map<string, { x: number; y: number }>();
+    graph.forEachNode((node) => {
+      startPositions.set(node, {
+        x: graph.getNodeAttribute(node, "x") as number,
+        y: graph.getNodeAttribute(node, "y") as number,
+      });
+    });
+
+    function animateStep() {
+      const elapsed = performance.now() - startTime;
+      const rawT = Math.min(elapsed / ANIM_DURATION, 1);
+      const t = easeOutCubic(rawT);
+
+      graph.forEachNode((node) => {
+        const start = startPositions.get(node)!;
+        const end = finalPositions.get(node)!;
+        graph.setNodeAttribute(node, "x", start.x + (end.x - start.x) * t);
+        graph.setNodeAttribute(node, "y", start.y + (end.y - start.y) * t);
+      });
+
+      if (rawT < 1) {
+        animFrameRef.current = requestAnimationFrame(animateStep);
+      } else {
+        animFrameRef.current = null;
+      }
+    }
+
+    animFrameRef.current = requestAnimationFrame(animateStep);
+
     return () => {
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
       if (sigmaRef.current) {
         sigmaRef.current.kill();
         sigmaRef.current = null;
@@ -516,9 +627,26 @@ export default function GraphCanvas({
     }
   }, [selectedNodeId, searchQuery, highlightedOperators]);
 
+  // Animate camera to focus on a specific node
+  useEffect(() => {
+    const renderer = sigmaRef.current;
+    const graph = graphRef.current;
+    if (!renderer || !graph || !focusNodeId) return;
+    if (!graph.hasNode(focusNodeId)) return;
+
+    const nodePosition = renderer.getNodeDisplayData(focusNodeId);
+    if (!nodePosition) return;
+
+    const camera = renderer.getCamera();
+    camera.animate(
+      { x: nodePosition.x, y: nodePosition.y, ratio: 0.15 },
+      { duration: 600 }
+    );
+  }, [focusNodeId]);
+
   if (!mounted) {
     return (
-      <div className="relative w-full h-full bg-[#0a0a12]">
+      <div className="relative w-full h-full bg-[#14141b]">
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-gray-500 text-sm font-[family-name:var(--font-geist-mono)]">
             Loading graph...

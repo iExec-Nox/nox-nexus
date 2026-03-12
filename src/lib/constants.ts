@@ -1,6 +1,9 @@
 export const SUBGRAPH_URL =
   "https://thegraph.arbitrum-sepolia-testnet.noxprotocol.io/api/subgraphs/id/BjQAX2HpmsSAzURJimKDhjZZnkSJtaczA8RPumggrStb";
 
+export const GATEWAY_URL =
+  "https://nox-gateway.arbitrum-sepolia-testnet.iex.ec";
+
 export const OPERATOR_COLORS: Record<string, string> = {
   PlaintextToEncrypted: "#a855f7",
   Add: "#10b981",
@@ -21,6 +24,7 @@ export const OPERATOR_COLORS: Record<string, string> = {
   Transfer: "#ef4444",
   Mint: "#22c55e",
   Burn: "#dc2626",
+  EncryptedInput: "#38bdf8",
   Default: "#64748b",
 };
 
@@ -44,8 +48,13 @@ export const OPERATOR_LABELS: Record<string, string> = {
   Transfer: "Transfer",
   Mint: "Mint",
   Burn: "Burn",
+  EncryptedInput: "Encrypted Input",
   Default: "Default",
 };
+
+export const OFF_CHAIN_OPS: string[] = [
+  "EncryptedInput",
+];
 
 export const CORE_PRIMITIVES: string[] = [
   "PlaintextToEncrypted",
@@ -73,11 +82,12 @@ export const ADVANCED_FUNCTIONS: string[] = [
 ];
 
 export const ALL_OPERATORS: string[] = [
+  ...OFF_CHAIN_OPS,
   ...CORE_PRIMITIVES,
   ...ADVANCED_FUNCTIONS,
   "Default",
 ];
 
 export const NODE_SIZE_BASE = 1.5;
-export const NODE_SIZE_PER_CONNECTION = 0.2;
-export const NODE_SIZE_MAX = 5;
+export const NODE_SIZE_PER_CONNECTION = 0.8;
+export const NODE_SIZE_MAX = 12;

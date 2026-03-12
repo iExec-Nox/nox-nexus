@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, AlertTriangle } from "lucide-react";
 import {
   OPERATOR_COLORS,
   OPERATOR_LABELS,
+  OFF_CHAIN_OPS,
   CORE_PRIMITIVES,
   ADVANCED_FUNCTIONS,
 } from "@/lib/constants";
@@ -16,6 +17,10 @@ interface SidebarProps {
   onToggleNone: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  showUnresolvedOnly: boolean;
+  onToggleUnresolved: () => void;
+  unresolvedCount: number;
+  isLoadingStatuses: boolean;
 }
 
 function OperatorButton({
@@ -76,7 +81,14 @@ export default function Sidebar({
   onToggleNone,
   isCollapsed,
   onToggleCollapse,
+  showUnresolvedOnly,
+  onToggleUnresolved,
+  unresolvedCount,
+  isLoadingStatuses,
 }: SidebarProps) {
+  const presentOffChainOps = OFF_CHAIN_OPS.filter(
+    (op) => (operatorCounts[op] ?? 0) > 0
+  );
   const presentCorePrimitives = CORE_PRIMITIVES.filter(
     (op) => (operatorCounts[op] ?? 0) > 0
   );
@@ -108,6 +120,38 @@ export default function Sidebar({
       ) : (
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto px-3 pt-4 pb-4">
+            <div className="mb-4">
+              <button
+                onClick={onToggleUnresolved}
+                disabled={isLoadingStatuses}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-all duration-150 border ${
+                  showUnresolvedOnly
+                    ? "border-amber-500/40 bg-amber-500/10"
+                    : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-subtle)]"
+                } ${isLoadingStatuses ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <AlertTriangle
+                  className={`h-3.5 w-3.5 flex-shrink-0 ${
+                    showUnresolvedOnly ? "text-amber-400" : "text-[var(--color-text-muted)]"
+                  }`}
+                />
+                <span
+                  className={`flex-1 text-xs font-medium ${
+                    showUnresolvedOnly ? "text-amber-300" : "text-[var(--color-text-secondary)]"
+                  }`}
+                >
+                  {isLoadingStatuses ? "Loading statuses..." : "Unresolved only"}
+                </span>
+                <span
+                  className={`font-[family-name:var(--font-mono)] text-[10px] tabular-nums ${
+                    showUnresolvedOnly ? "text-amber-400" : "text-[var(--color-text-muted)]"
+                  }`}
+                >
+                  {isLoadingStatuses ? "..." : unresolvedCount}
+                </span>
+              </button>
+            </div>
+
             <div className="mb-5">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -131,6 +175,21 @@ export default function Sidebar({
               </div>
 
               <div className="flex flex-col gap-0.5">
+                {presentOffChainOps.length > 0 && (
+                  <>
+                    <CategoryHeader>Off-chain</CategoryHeader>
+                    {presentOffChainOps.map((op) => (
+                      <OperatorButton
+                        key={op}
+                        op={op}
+                        isSelected={selectedOperators.includes(op)}
+                        color={OPERATOR_COLORS[op] ?? "#64748b"}
+                        count={operatorCounts[op] ?? 0}
+                        onToggle={() => onOperatorToggle(op)}
+                      />
+                    ))}
+                  </>
+                )}
                 {presentCorePrimitives.length > 0 && (
                   <>
                     <CategoryHeader>Core Primitives</CategoryHeader>

@@ -3,19 +3,19 @@
 @import "tailwindcss";
 
 :root {
-  --color-void: #050510;
-  --color-deep: #0a0a12;
-  --color-surface: #12121c;
-  --color-elevated: #1a1a2e;
-  --color-hover: #22223a;
-  --color-accent: #7c3aed;
-  --color-accent-dim: #5b21b6;
-  --color-accent-glow: rgba(124, 58, 237, 0.15);
-  --color-border: #1e1e3a;
-  --color-border-subtle: #14142a;
-  --color-text-primary: #e2e8f0;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted: #475569;
+  --color-void: #14141b;
+  --color-deep: #17171e;
+  --color-surface: #202127;
+  --color-elevated: #202127;
+  --color-hover: #1d2032;
+  --color-accent: #5c73e7;
+  --color-accent-dim: #3e63dd;
+  --color-accent-glow: rgba(92, 115, 231, 0.15);
+  --color-border: #3c3f44;
+  --color-border-subtle: #2a2a35;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #d3d3d8;
+  --color-text-muted: #6a6a71;
 }
 
 @theme inline {
@@ -63,15 +63,15 @@ body {
 
 /* Graph canvas dot grid background */
 .graph-bg {
-  background-color: #0a0a12;
+  background-color: #14141b;
   background-image:
-    radial-gradient(circle, rgba(124, 58, 237, 0.04) 1px, transparent 1px);
+    radial-gradient(circle, rgba(92, 115, 231, 0.04) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
 /* Ambient glow behind logo */
 .logo-glow {
-  filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.5));
+  filter: drop-shadow(0 0 8px rgba(92, 115, 231, 0.5));
 }
 
 /* Accent underline for header */
@@ -95,7 +95,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent 25%,
-    rgba(124, 58, 237, 0.06) 50%,
+    rgba(92, 115, 231, 0.06) 50%,
     transparent 75%
   );
   background-size: 200% 100%;

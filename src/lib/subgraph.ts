@@ -102,6 +102,20 @@ const SEARCH_HANDLES_QUERY = gql`
   }
 `;
 
+const HANDLES_BY_ADMIN_QUERY = gql`
+  query FetchHandlesByAdmin($account: Bytes!, $first: Int!, $skip: Int!) {
+    handleRoles(
+      first: $first
+      skip: $skip
+      where: { account: $account, role: ADMIN }
+    ) {
+      handle {
+        id
+      }
+    }
+  }
+`;
+
 const PAGE_SIZE = 1000;
 
 export async function fetchHandles(
@@ -181,6 +195,32 @@ function incrementHex(hex: string): string {
   }
 
   return prefix + chars.join("");
+}
+
+export async function fetchHandleIdsByAdmin(
+  account: string
+): Promise<string[]> {
+  const allIds: string[] = [];
+  let skip = 0;
+
+  while (true) {
+    const data = await client.request<{
+      handleRoles: { handle: { id: string } }[];
+    }>(HANDLES_BY_ADMIN_QUERY, {
+      account: account.toLowerCase(),
+      first: PAGE_SIZE,
+      skip,
+    });
+
+    for (const role of data.handleRoles) {
+      allIds.push(role.handle.id);
+    }
+
+    if (data.handleRoles.length < PAGE_SIZE) break;
+    skip += PAGE_SIZE;
+  }
+
+  return [...new Set(allIds)];
 }
 
 export async function searchHandles(

@@ -10,6 +10,9 @@ import {
   ShieldOff,
   ArrowUpRight,
   ArrowDownRight,
+  CircleCheck,
+  CircleAlert,
+  Loader2,
 } from "lucide-react";
 import { Handle } from "@/lib/types";
 import { OPERATOR_COLORS, OPERATOR_LABELS } from "@/lib/constants";
@@ -18,6 +21,8 @@ interface HandleDetailPanelProps {
   handle: Handle | null;
   onClose: () => void;
   onHandleClick: (id: string) => void;
+  isResolved: boolean | null;
+  isLoadingStatus: boolean;
 }
 
 function truncateHex(hex: string, chars = 8): string {
@@ -87,6 +92,8 @@ export default function HandleDetailPanel({
   handle,
   onClose,
   onHandleClick,
+  isResolved,
+  isLoadingStatus,
 }: HandleDetailPanelProps) {
   const isOpen = handle !== null;
 
@@ -138,6 +145,30 @@ export default function HandleDetailPanel({
                   />
                   {OPERATOR_LABELS[handle.operator] ?? handle.operator}
                 </span>
+              </div>
+
+              <div>
+                <SectionLabel>Ciphertext Status</SectionLabel>
+                {isLoadingStatus ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Checking...
+                  </span>
+                ) : isResolved === true ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400 border border-emerald-500/20">
+                    <CircleCheck className="h-3.5 w-3.5" />
+                    Resolved
+                  </span>
+                ) : isResolved === false ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-400 border border-amber-500/20">
+                    <CircleAlert className="h-3.5 w-3.5" />
+                    Unresolved
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                    Unknown
+                  </span>
+                )}
               </div>
 
               <div>

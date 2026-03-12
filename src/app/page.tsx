@@ -1,10 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { Handle, GraphNode, GraphEdge } from "@/lib/types";
 import { ALL_OPERATORS } from "@/lib/constants";
-import { fetchAllHandlesPaginated, fetchHandleById } from "@/lib/subgraph";
+import {
+  fetchAllHandlesPaginated,
+  fetchHandleById,
+  fetchHandleIdsByAdmin,
+} from "@/lib/subgraph";
 import { buildGraph } from "@/lib/graph-adapter";
+import {
+  fetchHandleStatuses,
+  fetchSingleHandleStatus,
+  type HandleStatusMap,
+} from "@/lib/gateway";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import dynamic from "next/dynamic";
@@ -33,6 +42,13 @@ export default function Home() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedHandle, setSelectedHandle] = useState<Handle | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [handleStatuses, setHandleStatuses] = useState<HandleStatusMap>({});
+  const [isLoadingStatuses, setIsLoadingStatuses] = useState(false);
+  const [showUnresolvedOnly, setShowUnresolvedOnly] = useState(false);
+  const [selectedHandleResolved, setSelectedHandleResolved] = useState<
+    boolean | null
+  >(null);
+  const [isLoadingSelectedStatus, setIsLoadingSelectedStatus] = useState(false);
 
   const loadHandles = useCallback(async () => {
     setIsLoading(true);
@@ -50,11 +66,25 @@ export default function Home() {
     loadHandles();
   }, [loadHandles]);
 
+  useEffect(() => {
+    if (handles.length === 0) return;
+    const ids = handles.map((h) => h.id);
+    setIsLoadingStatuses(true);
+    fetchHandleStatuses(ids)
+      .then(setHandleStatuses)
+      .finally(() => setIsLoadingStatuses(false));
+  }, [handles]);
+
   const { nodes, edges } = useMemo(() => buildGraph(handles), [handles]);
 
   const filteredNodes = useMemo(
-    () => nodes.filter((n) => selectedOperators.includes(n.operator)),
-    [nodes, selectedOperators]
+    () =>
+      nodes.filter((n) => {
+        if (!selectedOperators.includes(n.operator)) return false;
+        if (showUnresolvedOnly && handleStatuses[n.id] !== false) return false;
+        return true;
+      }),
+    [nodes, selectedOperators, showUnresolvedOnly, handleStatuses]
   );
 
   const filteredNodeIds = useMemo(
@@ -78,15 +108,36 @@ export default function Home() {
     return counts;
   }, [nodes]);
 
-  const handleNodeClick = useCallback(async (nodeId: string) => {
+  const unresolvedCount = useMemo(
+    () =>
+      Object.values(handleStatuses).filter((resolved) => resolved === false)
+        .length,
+    [handleStatuses]
+  );
+
+  const selectNode = useCallback(async (nodeId: string) => {
     setSelectedNodeId(nodeId);
+    setSelectedHandleResolved(null);
+    setIsLoadingSelectedStatus(true);
     try {
-      const full = await fetchHandleById(nodeId);
+      const [full, resolved] = await Promise.all([
+        fetchHandleById(nodeId),
+        fetchSingleHandleStatus(nodeId),
+      ]);
       setSelectedHandle(full);
+      setSelectedHandleResolved(resolved);
     } catch {
       setSelectedHandle(null);
+      setSelectedHandleResolved(null);
+    } finally {
+      setIsLoadingSelectedStatus(false);
     }
   }, []);
+
+  const handleNodeClick = useCallback(async (nodeId: string) => {
+    setSearchQuery("");
+    await selectNode(nodeId);
+  }, [selectNode]);
 
   const handleBackgroundClick = useCallback(() => {
     setSelectedNodeId(null);
@@ -106,6 +157,25 @@ export default function Home() {
   const handleToggleNone = useCallback(() => {
     setSelectedOperators([]);
   }, []);
+
+  // Detect when search matches exactly one node to focus on it
+  const focusNodeId = useMemo(() => {
+    if (!searchQuery || searchQuery.length < 6) return null;
+    const q = searchQuery.toLowerCase();
+    const matches = filteredNodes.filter((n) => n.id.toLowerCase().includes(q));
+    if (matches.length === 1) return matches[0].id;
+    // Also check exact match
+    const exact = filteredNodes.find((n) => n.id.toLowerCase() === q);
+    if (exact) return exact.id;
+    return null;
+  }, [searchQuery, filteredNodes]);
+
+  // When search focuses on a node, also select it (without clearing search)
+  useEffect(() => {
+    if (focusNodeId) {
+      selectNode(focusNodeId);
+    }
+  }, [focusNodeId, selectNode]);
 
   const handleDetailClick = useCallback(
     async (id: string) => {
@@ -133,6 +203,10 @@ export default function Home() {
           onToggleNone={handleToggleNone}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed((p) => !p)}
+          showUnresolvedOnly={showUnresolvedOnly}
+          onToggleUnresolved={() => setShowUnresolvedOnly((p) => !p)}
+          unresolvedCount={unresolvedCount}
+          isLoadingStatuses={isLoadingStatuses}
         />
 
         <main className="relative flex-1">
@@ -144,6 +218,7 @@ export default function Home() {
             selectedNodeId={selectedNodeId}
             searchQuery={searchQuery}
             highlightedOperators={selectedOperators}
+            focusNodeId={focusNodeId}
           />
 
           <div className="absolute bottom-4 left-4 z-10">
@@ -159,6 +234,8 @@ export default function Home() {
           handle={selectedHandle}
           onClose={handleBackgroundClick}
           onHandleClick={handleDetailClick}
+          isResolved={selectedHandleResolved}
+          isLoadingStatus={isLoadingSelectedStatus}
         />
       </div>
 
