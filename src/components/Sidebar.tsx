@@ -150,14 +150,24 @@ export default function Sidebar({
                   <button
                     onClick={onToggleUnresolved}
                     disabled={isLoadingStatuses}
-                    className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-all duration-150 border ${
+                    className={`group flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-all duration-150 ${
                       showUnresolvedOnly
-                        ? "border-amber-500/40 bg-amber-500/10"
-                        : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-subtle)]"
+                        ? "bg-[var(--color-surface)]"
+                        : "opacity-40 hover:opacity-70"
                     } ${isLoadingStatuses ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
+                    <span
+                      className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150"
+                      style={{
+                        backgroundColor: showUnresolvedOnly ? "#f59e0b" : "transparent",
+                        borderColor: showUnresolvedOnly ? "#f59e0b" : "var(--color-text-muted)",
+                        boxShadow: showUnresolvedOnly ? "0 0 6px #f59e0b40" : "none",
+                      }}
+                    >
+                      {showUnresolvedOnly && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+                    </span>
                     <AlertTriangle
-                      className={`h-3.5 w-3.5 flex-shrink-0 ${
+                      className={`h-3 w-3 flex-shrink-0 ${
                         showUnresolvedOnly ? "text-amber-400" : "text-[var(--color-text-muted)]"
                       }`}
                     />

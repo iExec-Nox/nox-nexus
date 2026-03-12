@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, type MutableRefObject } from "react";
 import type { Handle, GraphNode, GraphEdge } from "@/lib/types";
 import { ALL_OPERATORS } from "@/lib/constants";
 import {
@@ -14,6 +14,7 @@ import {
   fetchSingleHandleStatus,
   type HandleStatusMap,
 } from "@/lib/gateway";
+import type { LayoutMode } from "@/lib/graph-layouts";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import dynamic from "next/dynamic";
@@ -50,6 +51,7 @@ export default function Home() {
   >(null);
   const [isLoadingSelectedStatus, setIsLoadingSelectedStatus] = useState(false);
   const [addressFilterIds, setAddressFilterIds] = useState<Set<string> | null>(null);
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>("force");
   const [isLoadingAddressFilter, setIsLoadingAddressFilter] = useState(false);
 
   const isEthAddress = useCallback(
@@ -106,29 +108,53 @@ export default function Home() {
 
   const { nodes, edges } = useMemo(() => buildGraph(handles), [handles]);
 
-  const filteredNodes = useMemo(
-    () =>
-      nodes.filter((n) => {
-        if (!selectedOperators.includes(n.operator)) return false;
-        if (showUnresolvedOnly && handleStatuses[n.id] !== false) return false;
-        if (addressFilterIds !== null && !addressFilterIds.has(n.id)) return false;
-        return true;
-      }),
-    [nodes, selectedOperators, showUnresolvedOnly, handleStatuses, addressFilterIds]
-  );
+  const prevFilteredNodeIdsRef = useRef<string[]>([]);
+  const prevFilteredNodesRef = useRef<GraphNode[]>([]);
+  const prevFilteredEdgesRef = useRef<GraphEdge[]>([]);
+
+  const filteredNodes = useMemo(() => {
+    const result = nodes.filter((n) => {
+      if (!selectedOperators.includes(n.operator)) return false;
+      if (showUnresolvedOnly && handleStatuses[n.id] !== false) return false;
+      if (addressFilterIds !== null && !addressFilterIds.has(n.id)) return false;
+      return true;
+    });
+
+    // Stabilize reference: return previous array if IDs are identical
+    const ids = result.map((n) => n.id);
+    const prev = prevFilteredNodeIdsRef.current;
+    if (
+      ids.length === prev.length &&
+      ids.every((id, i) => id === prev[i])
+    ) {
+      return prevFilteredNodesRef.current;
+    }
+    prevFilteredNodeIdsRef.current = ids;
+    prevFilteredNodesRef.current = result;
+    return result;
+  }, [nodes, selectedOperators, showUnresolvedOnly, handleStatuses, addressFilterIds]);
 
   const filteredNodeIds = useMemo(
     () => new Set(filteredNodes.map((n) => n.id)),
     [filteredNodes]
   );
 
-  const filteredEdges = useMemo(
-    () =>
-      edges.filter(
-        (e) => filteredNodeIds.has(e.source) && filteredNodeIds.has(e.target)
-      ),
-    [edges, filteredNodeIds]
-  );
+  const filteredEdges = useMemo(() => {
+    const result = edges.filter(
+      (e) => filteredNodeIds.has(e.source) && filteredNodeIds.has(e.target)
+    );
+
+    // Stabilize reference
+    const prev = prevFilteredEdgesRef.current;
+    if (
+      result.length === prev.length &&
+      result.every((e, i) => e.id === prev[i].id)
+    ) {
+      return prev;
+    }
+    prevFilteredEdgesRef.current = result;
+    return result;
+  }, [edges, filteredNodeIds]);
 
   const operatorCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -253,6 +279,8 @@ export default function Home() {
             searchQuery={searchQuery}
             highlightedOperators={selectedOperators}
             focusNodeId={focusNodeId}
+            layoutMode={layoutMode}
+            onLayoutChange={setLayoutMode}
           />
 
           <div className="absolute bottom-4 left-4 z-10">

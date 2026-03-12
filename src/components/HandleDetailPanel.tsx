@@ -129,25 +129,43 @@ export default function HandleDetailPanel({
                 <CopyableHex value={handle.id} />
               </div>
 
-              <div>
-                <SectionLabel>Operator</SectionLabel>
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
-                  style={{
-                    backgroundColor: `${OPERATOR_COLORS[handle.operator] ?? "#64748b"}20`,
-                    color: OPERATOR_COLORS[handle.operator] ?? "#64748b",
-                    border: `1px solid ${OPERATOR_COLORS[handle.operator] ?? "#64748b"}40`,
-                  }}
-                >
+              {handle.operator ? (
+                <div>
+                  <SectionLabel>Operator</SectionLabel>
                   <span
-                    className="h-1.5 w-1.5 rounded-full"
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
                     style={{
-                      backgroundColor: OPERATOR_COLORS[handle.operator] ?? "#64748b",
+                      backgroundColor: `${OPERATOR_COLORS[handle.operator] ?? "#64748b"}20`,
+                      color: OPERATOR_COLORS[handle.operator] ?? "#64748b",
+                      border: `1px solid ${OPERATOR_COLORS[handle.operator] ?? "#64748b"}40`,
                     }}
-                  />
-                  {OPERATOR_LABELS[handle.operator] ?? handle.operator}
-                </span>
-              </div>
+                  >
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: OPERATOR_COLORS[handle.operator] ?? "#64748b" }}
+                    />
+                    {OPERATOR_LABELS[handle.operator] ?? handle.operator}
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  <SectionLabel>Source</SectionLabel>
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    style={{
+                      backgroundColor: `${OPERATOR_COLORS["EncryptedInput"]}20`,
+                      color: OPERATOR_COLORS["EncryptedInput"],
+                      border: `1px solid ${OPERATOR_COLORS["EncryptedInput"]}40`,
+                    }}
+                  >
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: OPERATOR_COLORS["EncryptedInput"] }}
+                    />
+                    Encrypted Input from Handle Gateway
+                  </span>
+                </div>
+              )}
 
               <div>
                 <SectionLabel>Ciphertext Status</SectionLabel>

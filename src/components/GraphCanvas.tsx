@@ -4,11 +4,9 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import Graph from "graphology";
 import Sigma from "sigma";
 import EdgeCurveProgram from "@sigma/edge-curve";
-import forceAtlas2 from "graphology-layout-forceatlas2";
-import noverlap from "graphology-layout-noverlap";
-import { connectedComponents } from "graphology-components";
 import type { GraphNode, GraphEdge } from "@/lib/types";
 import { OPERATOR_COLORS } from "@/lib/constants";
+import { computeLayout, type LayoutMode } from "@/lib/graph-layouts";
 import type { Settings } from "sigma/settings";
 import type { NodeDisplayData, PartialButFor } from "sigma/types";
 
@@ -17,6 +15,7 @@ type LabelData = PartialButFor<
   "x" | "y" | "size" | "label" | "color"
 >;
 import ZoomControls from "./ZoomControls";
+import LayoutSelector from "./LayoutSelector";
 
 function drawDarkLabel(
   context: CanvasRenderingContext2D,
@@ -103,6 +102,8 @@ interface GraphCanvasProps {
   searchQuery: string;
   highlightedOperators: string[];
   focusNodeId: string | null;
+  layoutMode: LayoutMode;
+  onLayoutChange: (mode: LayoutMode) => void;
 }
 
 function truncateHandle(id: string): string {
@@ -124,6 +125,8 @@ export default function GraphCanvas({
   searchQuery,
   highlightedOperators,
   focusNodeId,
+  layoutMode,
+  onLayoutChange,
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaRef = useRef<Sigma | null>(null);
@@ -401,176 +404,41 @@ export default function GraphCanvas({
       }
     });
 
-    // Detect connected components and lay out each one independently
-    const components = connectedComponents(graph);
-    components.sort((a, b) => b.length - a.length);
-
-    const componentData: { nodes: string[]; radius: number }[] = [];
-
-    for (const componentNodes of components) {
-      if (componentNodes.length === 1) {
-        graph.setNodeAttribute(componentNodes[0], "x", 0);
-        graph.setNodeAttribute(componentNodes[0], "y", 0);
-        componentData.push({ nodes: componentNodes, radius: 30 });
-        continue;
-      }
-
-      // Build subgraph
-      const subgraph = new Graph();
-      for (const nodeId of componentNodes) {
-        subgraph.addNode(nodeId, { ...graph.getNodeAttributes(nodeId) });
-      }
-      const nodeSet = new Set(componentNodes);
-      graph.forEachEdge((edgeKey, attrs, source, target) => {
-        if (nodeSet.has(source) && nodeSet.has(target)) {
-          subgraph.addEdgeWithKey(edgeKey, source, target, { ...attrs });
-        }
-      });
-
-      // Seed initial positions in a circle for better convergence
-      const initRadius = Math.sqrt(componentNodes.length) * 50;
-      componentNodes.forEach((nodeId, idx) => {
-        const a = (idx / componentNodes.length) * 2 * Math.PI;
-        subgraph.setNodeAttribute(nodeId, "x", Math.cos(a) * initRadius);
-        subgraph.setNodeAttribute(nodeId, "y", Math.sin(a) * initRadius);
-      });
-
-      forceAtlas2.assign(subgraph, {
-        iterations: 400,
-        settings: {
-          gravity: 0.5,
-          scalingRatio: 400,
-          barnesHutOptimize: subgraph.order > 50,
-          strongGravityMode: false,
-          slowDown: 5,
-          outboundAttractionDistribution: true,
-          adjustSizes: true,
-        },
-      });
-
-      // Center the component at origin
-      let cx = 0, cy = 0;
-      for (const nodeId of componentNodes) {
-        cx += subgraph.getNodeAttribute(nodeId, "x") as number;
-        cy += subgraph.getNodeAttribute(nodeId, "y") as number;
-      }
-      cx /= componentNodes.length;
-      cy /= componentNodes.length;
-
-      // Scale based on average edge length to guarantee visible links
-      let totalEdgeLen = 0;
-      let edgeCount = 0;
-      subgraph.forEachEdge((_e, _a, src, tgt) => {
-        const sx = subgraph.getNodeAttribute(src, "x") as number;
-        const sy = subgraph.getNodeAttribute(src, "y") as number;
-        const tx = subgraph.getNodeAttribute(tgt, "x") as number;
-        const ty = subgraph.getNodeAttribute(tgt, "y") as number;
-        totalEdgeLen += Math.sqrt((sx - tx) ** 2 + (sy - ty) ** 2);
-        edgeCount++;
-      });
-      const avgEdgeLen = edgeCount > 0 ? totalEdgeLen / edgeCount : 1;
-      // Target: average edge should be ~120px so links are clearly visible
-      const scale = Math.max(avgEdgeLen > 0 ? 120 / avgEdgeLen : 1, 1.5);
-
-      for (const nodeId of componentNodes) {
-        graph.setNodeAttribute(nodeId, "x",
-          ((subgraph.getNodeAttribute(nodeId, "x") as number) - cx) * scale
-        );
-        graph.setNodeAttribute(nodeId, "y",
-          ((subgraph.getNodeAttribute(nodeId, "y") as number) - cy) * scale
-        );
-      }
-
-      // Per-component noverlap for effective overlap removal
-      const nGraph = new Graph();
-      for (const nodeId of componentNodes) {
-        nGraph.addNode(nodeId, { ...graph.getNodeAttributes(nodeId) });
-      }
-      noverlap.assign(nGraph, {
-        maxIterations: 300,
-        settings: { margin: 15, ratio: 3 },
-      });
-      for (const nodeId of componentNodes) {
-        graph.setNodeAttribute(nodeId, "x", nGraph.getNodeAttribute(nodeId, "x") as number);
-        graph.setNodeAttribute(nodeId, "y", nGraph.getNodeAttribute(nodeId, "y") as number);
-      }
-
-      // Compute bounding radius
-      let finalRadius = 0;
-      for (const nodeId of componentNodes) {
-        const x = graph.getNodeAttribute(nodeId, "x") as number;
-        const y = graph.getNodeAttribute(nodeId, "y") as number;
-        const dist = Math.sqrt(x * x + y * y);
-        if (dist > finalRadius) finalRadius = dist;
-      }
-      componentData.push({ nodes: componentNodes, radius: finalRadius + 40 });
-    }
-
-    // Arrange components in a spiral layout (golden angle)
-    let angle = 0;
-    const largestRadius = componentData[0]?.radius ?? 100;
-
-    for (let i = 0; i < componentData.length; i++) {
-      const comp = componentData[i];
-
-      let offsetX: number, offsetY: number;
-      if (i === 0) {
-        offsetX = 0;
-        offsetY = 0;
-      } else {
-        let spiralR = largestRadius + comp.radius + 120;
-        for (let j = 1; j < i; j++) {
-          spiralR += componentData[j].radius * 0.4 + 80;
-        }
-        offsetX = Math.cos(angle) * spiralR;
-        offsetY = Math.sin(angle) * spiralR;
-        angle += Math.PI * (3 - Math.sqrt(5));
-      }
-
-      for (const nodeId of comp.nodes) {
-        graph.setNodeAttribute(nodeId, "x",
-          (graph.getNodeAttribute(nodeId, "x") as number) + offsetX
-        );
-        graph.setNodeAttribute(nodeId, "y",
-          (graph.getNodeAttribute(nodeId, "y") as number) + offsetY
-        );
-      }
-    }
+    // Compute layout positions
+    const finalPositions = computeLayout(graph, layoutMode);
 
     // --- Animated settling ---
-    // Save final positions, then scramble and animate toward them
-    const finalPositions = new Map<string, { x: number; y: number }>();
-    graph.forEachNode((node) => {
-      finalPositions.set(node, {
-        x: graph.getNodeAttribute(node, "x") as number,
-        y: graph.getNodeAttribute(node, "y") as number,
-      });
-    });
-
-    // Compute graph center for initial scatter
+    // Compute graph center and bounding box
     let gcx = 0, gcy = 0;
     finalPositions.forEach((pos) => { gcx += pos.x; gcy += pos.y; });
     gcx /= finalPositions.size || 1;
     gcy /= finalPositions.size || 1;
 
-    // Start nodes near graph center with jitter
-    const spreadRadius = 200;
+    let minFX = Infinity, maxFX = -Infinity, minFY = Infinity, maxFY = -Infinity;
+    finalPositions.forEach((pos) => {
+      if (pos.x < minFX) minFX = pos.x;
+      if (pos.x > maxFX) maxFX = pos.x;
+      if (pos.y < minFY) minFY = pos.y;
+      if (pos.y > maxFY) maxFY = pos.y;
+    });
+    const graphSpan = Math.max(maxFX - minFX, maxFY - minFY, 500);
+
+    // Start nodes scattered across the full graph area for gentle convergence
     graph.forEachNode((node) => {
-      graph.setNodeAttribute(node, "x", gcx + (Math.random() - 0.5) * spreadRadius);
-      graph.setNodeAttribute(node, "y", gcy + (Math.random() - 0.5) * spreadRadius);
+      graph.setNodeAttribute(node, "x", gcx + (Math.random() - 0.5) * graphSpan * 0.8);
+      graph.setNodeAttribute(node, "y", gcy + (Math.random() - 0.5) * graphSpan * 0.8);
     });
 
     renderer.refresh();
 
     // Animate from scrambled to final positions
-    const ANIM_DURATION = 6000; // ms
+    const ANIM_DURATION = 4000;
     const startTime = performance.now();
 
-    function easeOutCubic(t: number): number {
-      return 1 - Math.pow(1 - t, 3);
+    function easeOutQuart(t: number): number {
+      return 1 - Math.pow(1 - t, 4);
     }
 
-    // Capture start positions
     const startPositions = new Map<string, { x: number; y: number }>();
     graph.forEachNode((node) => {
       startPositions.set(node, {
@@ -582,13 +450,15 @@ export default function GraphCanvas({
     function animateStep() {
       const elapsed = performance.now() - startTime;
       const rawT = Math.min(elapsed / ANIM_DURATION, 1);
-      const t = easeOutCubic(rawT);
+      const t = easeOutQuart(rawT);
 
       graph.forEachNode((node) => {
         const start = startPositions.get(node)!;
         const end = finalPositions.get(node)!;
-        graph.setNodeAttribute(node, "x", start.x + (end.x - start.x) * t);
-        graph.setNodeAttribute(node, "y", start.y + (end.y - start.y) * t);
+        if (start && end) {
+          graph.setNodeAttribute(node, "x", start.x + (end.x - start.x) * t);
+          graph.setNodeAttribute(node, "y", start.y + (end.y - start.y) * t);
+        }
       });
 
       if (rawT < 1) {
@@ -612,7 +482,7 @@ export default function GraphCanvas({
       }
       setSigmaInstance(null);
     };
-  }, [mounted, nodes, edges, buildGraphInstance]);
+  }, [mounted, nodes, edges, buildGraphInstance, layoutMode]);
 
   // Update refs and trigger a lightweight refresh when filter state changes.
   // The reducers already read from these refs, so no need to replace them.
@@ -659,6 +529,7 @@ export default function GraphCanvas({
   return (
     <div className="relative w-full h-full graph-bg">
       <div ref={containerRef} className="w-full h-full" />
+      <LayoutSelector layoutMode={layoutMode} onLayoutChange={onLayoutChange} />
       <ZoomControls sigma={sigmaInstance} />
     </div>
   );
