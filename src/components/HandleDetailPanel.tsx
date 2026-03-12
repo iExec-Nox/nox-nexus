@@ -301,7 +301,7 @@ export default function HandleDetailPanel({
               {handle.roles.length > 0 && (
                 <div>
                   <SectionLabel>Roles ({handle.roles.length})</SectionLabel>
-                  <div className="overflow-hidden rounded-md border border-[var(--color-border)]">
+                  <div className="overflow-x-auto rounded-md border border-[var(--color-border)]">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
@@ -329,7 +329,7 @@ export default function HandleDetailPanel({
                                   className="font-[family-name:var(--font-mono)] text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-accent)] cursor-pointer"
                                   title="Search handles for this address"
                                 >
-                                  {truncateHex(role.account, 6)}
+                                  {truncateHex(role.account, 4)}
                                 </button>
                                 <CopyIconButton value={role.account} />
                               </div>
@@ -352,7 +352,7 @@ export default function HandleDetailPanel({
                                   className="font-[family-name:var(--font-mono)] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-accent)] cursor-pointer"
                                   title="Search handles for this address"
                                 >
-                                  {truncateHex(role.grantedBy, 6)}
+                                  {truncateHex(role.grantedBy, 4)}
                                 </button>
                                 <CopyIconButton value={role.grantedBy} />
                               </div>

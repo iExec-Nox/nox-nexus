@@ -407,68 +407,108 @@ export default function GraphCanvas({
     // Compute layout positions
     const finalPositions = computeLayout(graph, layoutMode);
 
-    // --- Animated settling ---
-    // Compute graph center and bounding box
-    let gcx = 0, gcy = 0;
-    finalPositions.forEach((pos) => { gcx += pos.x; gcy += pos.y; });
-    gcx /= finalPositions.size || 1;
-    gcy /= finalPositions.size || 1;
+    const nodeCount = graph.order;
 
-    let minFX = Infinity, maxFX = -Infinity, minFY = Infinity, maxFY = -Infinity;
-    finalPositions.forEach((pos) => {
-      if (pos.x < minFX) minFX = pos.x;
-      if (pos.x > maxFX) maxFX = pos.x;
-      if (pos.y < minFY) minFY = pos.y;
-      if (pos.y > maxFY) maxFY = pos.y;
-    });
-    const graphSpan = Math.max(maxFX - minFX, maxFY - minFY, 500);
-
-    // Start nodes scattered across the full graph area for gentle convergence
-    graph.forEachNode((node) => {
-      graph.setNodeAttribute(node, "x", gcx + (Math.random() - 0.5) * graphSpan * 0.8);
-      graph.setNodeAttribute(node, "y", gcy + (Math.random() - 0.5) * graphSpan * 0.8);
-    });
-
-    renderer.refresh();
-
-    // Animate from scrambled to final positions
-    const ANIM_DURATION = 4000;
-    const startTime = performance.now();
-
-    function easeOutQuart(t: number): number {
-      return 1 - Math.pow(1 - t, 4);
-    }
-
-    const startPositions = new Map<string, { x: number; y: number }>();
-    graph.forEachNode((node) => {
-      startPositions.set(node, {
-        x: graph.getNodeAttribute(node, "x") as number,
-        y: graph.getNodeAttribute(node, "y") as number,
-      });
-    });
-
-    function animateStep() {
-      const elapsed = performance.now() - startTime;
-      const rawT = Math.min(elapsed / ANIM_DURATION, 1);
-      const t = easeOutQuart(rawT);
-
+    // For small graphs, set positions directly without animation
+    if (nodeCount < 50) {
       graph.forEachNode((node) => {
-        const start = startPositions.get(node)!;
-        const end = finalPositions.get(node)!;
-        if (start && end) {
-          graph.setNodeAttribute(node, "x", start.x + (end.x - start.x) * t);
-          graph.setNodeAttribute(node, "y", start.y + (end.y - start.y) * t);
+        const pos = finalPositions.get(node);
+        if (pos) {
+          graph.setNodeAttribute(node, "x", pos.x);
+          graph.setNodeAttribute(node, "y", pos.y);
         }
       });
 
-      if (rawT < 1) {
-        animFrameRef.current = requestAnimationFrame(animateStep);
-      } else {
-        animFrameRef.current = null;
+      // Boost node sizes for very small graphs so they're clearly visible
+      if (nodeCount < 10) {
+        graph.forEachNode((node) => {
+          const currentSize = graph.getNodeAttribute(node, "size") as number;
+          graph.setNodeAttribute(node, "size", Math.max(currentSize * 2.5, 6));
+        });
       }
-    }
 
-    animFrameRef.current = requestAnimationFrame(animateStep);
+      // Compute bounding box with padding
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      finalPositions.forEach((pos) => {
+        if (pos.x < minX) minX = pos.x;
+        if (pos.x > maxX) maxX = pos.x;
+        if (pos.y < minY) minY = pos.y;
+        if (pos.y > maxY) maxY = pos.y;
+      });
+      const span = Math.max(maxX - minX, maxY - minY, 80);
+      // More padding for tiny graphs to cluster nodes in center
+      const pad = nodeCount < 10 ? span * 1.5 : span * 0.3;
+      renderer.setCustomBBox({
+        x: [minX - pad, maxX + pad],
+        y: [minY - pad, maxY + pad],
+      });
+
+      renderer.refresh();
+      renderer.getCamera().setState({ x: 0.5, y: 0.5, ratio: 1, angle: 0 });
+    } else {
+      // --- Animated settling for large graphs ---
+      // Compute graph center and bounding box
+      let gcx = 0, gcy = 0;
+      finalPositions.forEach((pos) => { gcx += pos.x; gcy += pos.y; });
+      gcx /= finalPositions.size || 1;
+      gcy /= finalPositions.size || 1;
+
+      let minFX = Infinity, maxFX = -Infinity, minFY = Infinity, maxFY = -Infinity;
+      finalPositions.forEach((pos) => {
+        if (pos.x < minFX) minFX = pos.x;
+        if (pos.x > maxFX) maxFX = pos.x;
+        if (pos.y < minFY) minFY = pos.y;
+        if (pos.y > maxFY) maxFY = pos.y;
+      });
+      const graphSpan = Math.max(maxFX - minFX, maxFY - minFY, 500);
+
+      // Start nodes scattered across the full graph area for gentle convergence
+      graph.forEachNode((node) => {
+        graph.setNodeAttribute(node, "x", gcx + (Math.random() - 0.5) * graphSpan * 0.8);
+        graph.setNodeAttribute(node, "y", gcy + (Math.random() - 0.5) * graphSpan * 0.8);
+      });
+
+      renderer.refresh();
+
+      // Animate from scrambled to final positions
+      const ANIM_DURATION = 4000;
+      const startTime = performance.now();
+
+      function easeOutQuart(t: number): number {
+        return 1 - Math.pow(1 - t, 4);
+      }
+
+      const startPositions = new Map<string, { x: number; y: number }>();
+      graph.forEachNode((node) => {
+        startPositions.set(node, {
+          x: graph.getNodeAttribute(node, "x") as number,
+          y: graph.getNodeAttribute(node, "y") as number,
+        });
+      });
+
+      function animateStep() {
+        const elapsed = performance.now() - startTime;
+        const rawT = Math.min(elapsed / ANIM_DURATION, 1);
+        const t = easeOutQuart(rawT);
+
+        graph.forEachNode((node) => {
+          const start = startPositions.get(node)!;
+          const end = finalPositions.get(node)!;
+          if (start && end) {
+            graph.setNodeAttribute(node, "x", start.x + (end.x - start.x) * t);
+            graph.setNodeAttribute(node, "y", start.y + (end.y - start.y) * t);
+          }
+        });
+
+        if (rawT < 1) {
+          animFrameRef.current = requestAnimationFrame(animateStep);
+        } else {
+          animFrameRef.current = null;
+        }
+      }
+
+      animFrameRef.current = requestAnimationFrame(animateStep);
+    }
 
     return () => {
       if (animFrameRef.current !== null) {
@@ -504,12 +544,29 @@ export default function GraphCanvas({
     if (!renderer || !graph || !focusNodeId) return;
     if (!graph.hasNode(focusNodeId)) return;
 
-    const nodePosition = renderer.getNodeDisplayData(focusNodeId);
-    if (!nodePosition) return;
+    // Get node position in graph space
+    const nodeX = graph.getNodeAttribute(focusNodeId, "x") as number;
+    const nodeY = graph.getNodeAttribute(focusNodeId, "y") as number;
+
+    // Compute graph bounding box to normalize to framed graph coords [0,1]
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    graph.forEachNode((_, attrs) => {
+      const x = attrs.x as number;
+      const y = attrs.y as number;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    });
+
+    const rangeX = maxX - minX || 1;
+    const rangeY = maxY - minY || 1;
+    const framedX = (nodeX - minX) / rangeX;
+    const framedY = (nodeY - minY) / rangeY;
 
     const camera = renderer.getCamera();
     camera.animate(
-      { x: nodePosition.x, y: nodePosition.y, ratio: 0.15 },
+      { x: framedX, y: framedY, ratio: 0.1 },
       { duration: 600 }
     );
   }, [focusNodeId]);
