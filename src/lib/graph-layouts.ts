@@ -124,23 +124,22 @@ function layoutForce(graph: Graph, componentNodes: string[]): PositionMap {
     subgraph.setNodeAttribute(nodeId, "y", (Math.random() - 0.5) * initSpread);
   });
 
-  // Temporarily inflate node sizes to boost repulsion (like GitNexus)
-  // This keeps connected nodes close (edge attraction) while preventing overlap (size repulsion)
+  // Temporarily inflate node sizes to boost repulsion
   const originalSizes = new Map<string, number>();
   subgraph.forEachNode((node) => {
     const s = subgraph.getNodeAttribute(node, "size") as number;
     originalSizes.set(node, s);
-    subgraph.setNodeAttribute(node, "size", s * 3);
+    subgraph.setNodeAttribute(node, "size", s * 12);
   });
 
   const inferred = forceAtlas2.inferSettings(subgraph);
 
   forceAtlas2.assign(subgraph, {
-    iterations: nodeCount < 200 ? 600 : nodeCount < 1000 ? 1500 : 3000,
+    iterations: nodeCount < 200 ? 1000 : nodeCount < 1000 ? 2500 : 4000,
     settings: {
       ...inferred,
-      gravity: 0.3,
-      scalingRatio: nodeCount < 200 ? 30 : nodeCount < 1000 ? 80 : 150,
+      gravity: 0.05,
+      scalingRatio: nodeCount < 200 ? 400 : nodeCount < 1000 ? 600 : 800,
       barnesHutOptimize: nodeCount > 100,
       barnesHutTheta: 0.5,
       strongGravityMode: false,
@@ -157,10 +156,31 @@ function layoutForce(graph: Graph, componentNodes: string[]): PositionMap {
     subgraph.setNodeAttribute(node, "size", originalSizes.get(node)!);
   });
 
-  // Remove overlaps
+  // Scale all positions outward from center to create spacing
+  // The idea: multiply all positions by a factor so nodes are further apart
+  if (nodeCount > 1) {
+    let cx = 0, cy = 0;
+    subgraph.forEachNode((node) => {
+      cx += subgraph.getNodeAttribute(node, "x") as number;
+      cy += subgraph.getNodeAttribute(node, "y") as number;
+    });
+    cx /= nodeCount;
+    cy /= nodeCount;
+
+    // Scale factor: bigger for larger components
+    const scaleFactor = nodeCount < 50 ? 3 : nodeCount < 200 ? 5 : 7;
+    subgraph.forEachNode((node) => {
+      const x = subgraph.getNodeAttribute(node, "x") as number;
+      const y = subgraph.getNodeAttribute(node, "y") as number;
+      subgraph.setNodeAttribute(node, "x", cx + (x - cx) * scaleFactor);
+      subgraph.setNodeAttribute(node, "y", cy + (y - cy) * scaleFactor);
+    });
+  }
+
+  // Final noverlap pass with large margin
   noverlap.assign(subgraph, {
-    maxIterations: 50,
-    settings: { margin: 15, ratio: 1.5, expansion: 1.1 },
+    maxIterations: 500,
+    settings: { margin: 80, ratio: 5, expansion: 2.0 },
   });
 
   const positions: PositionMap = new Map();
