@@ -5,28 +5,31 @@ export const GATEWAY_URL =
   "https://nox-gateway.arbitrum-sepolia-testnet.iex.ec";
 
 export const OPERATOR_COLORS: Record<string, string> = {
-  PlaintextToEncrypted: "#a855f7", // violet
-  Add: "#6d8cf7",                  // periwinkle blue
-  Sub: "#818cf8",                  // indigo
-  Mul: "#3b82f6",                  // blue
-  Div: "#7c6ef0",                  // blue-violet
+  PlaintextToEncrypted: "#c084fc", // bright lavender
+  Add: "#3b82f6",                  // blue
+  Sub: "#8b5cf6",                  // violet
+  Mul: "#22d3ee",                  // cyan
+  Div: "#a78bfa",                  // light violet
   Eq: "#6366f1",                   // indigo
-  Ne: "#7c7cf8",                   // light indigo
-  Lt: "#5b5bd6",                   // deep indigo
-  Le: "#5b5bd6",
-  Gt: "#5b5bd6",
-  Ge: "#5b5bd6",
-  SafeAdd: "#38bdf8",              // sky blue
-  SafeSub: "#47a5f5",              // medium blue
-  SafeMul: "#5eaff2",              // soft blue
-  SafeDiv: "#5eaff2",
-  Select: "#c084fc",               // light purple
-  Transfer: "#d970e0",             // magenta-pink
-  Mint: "#60a5fa",                 // cornflower blue
-  Burn: "#b46eeb",                 // purple
-  EncryptedInput: "#22d3ee",       // cyan
-  Default: "#7a88a8",              // blue-grey
+  Ne: "#818cf8",                   // periwinkle
+  Lt: "#4f46e5",                   // deep indigo
+  Le: "#4f46e5",
+  Gt: "#4f46e5",
+  Ge: "#4f46e5",
+  SafeAdd: "#06b6d4",              // dark cyan
+  SafeSub: "#0ea5e9",              // sky blue
+  SafeMul: "#38bdf8",              // light sky
+  SafeDiv: "#38bdf8",
+  Select: "#7c3aed",               // violet
+  Transfer: "#e879f9",             // pink-magenta
+  Mint: "#2dd4bf",                 // teal
+  Burn: "#f472b6",                 // pink
+  EncryptedInput: "#60a5fa",       // cornflower blue
+  Default: "#7c8bb4",              // slate blue
 };
+
+export const EDGE_COLOR_TEAL = "#0d9488";
+export const EDGE_COLOR_VIOLET = "#7c3aed";
 
 export const OPERATOR_LABELS: Record<string, string> = {
   PlaintextToEncrypted: "Plaintext to Encrypted",

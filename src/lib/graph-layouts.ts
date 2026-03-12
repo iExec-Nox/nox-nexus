@@ -115,43 +115,52 @@ function buildSubgraph(graph: Graph, componentNodes: string[]): Graph {
 
 function layoutForce(graph: Graph, componentNodes: string[]): PositionMap {
   const subgraph = buildSubgraph(graph, componentNodes);
+  const nodeCount = componentNodes.length;
 
-  const initSpread = Math.sqrt(componentNodes.length) * 40;
+  // Scatter initial positions
+  const initSpread = Math.sqrt(nodeCount) * 50;
   componentNodes.forEach((nodeId) => {
     subgraph.setNodeAttribute(nodeId, "x", (Math.random() - 0.5) * initSpread);
     subgraph.setNodeAttribute(nodeId, "y", (Math.random() - 0.5) * initSpread);
   });
 
-  const nodeCount = componentNodes.length;
+  // Temporarily inflate node sizes to boost repulsion (like GitNexus)
+  // This keeps connected nodes close (edge attraction) while preventing overlap (size repulsion)
+  const originalSizes = new Map<string, number>();
+  subgraph.forEachNode((node) => {
+    const s = subgraph.getNodeAttribute(node, "size") as number;
+    originalSizes.set(node, s);
+    subgraph.setNodeAttribute(node, "size", s * 3);
+  });
+
+  const inferred = forceAtlas2.inferSettings(subgraph);
 
   forceAtlas2.assign(subgraph, {
-    iterations: nodeCount < 200 ? 800 : nodeCount < 1000 ? 1200 : 2000,
+    iterations: nodeCount < 200 ? 600 : nodeCount < 1000 ? 1500 : 3000,
     settings: {
-      gravity: 0.5,
-      scalingRatio: nodeCount < 200 ? 400 : nodeCount < 1000 ? 600 : 800,
-      barnesHutOptimize: nodeCount > 50,
+      ...inferred,
+      gravity: 0.3,
+      scalingRatio: nodeCount < 200 ? 30 : nodeCount < 1000 ? 80 : 150,
+      barnesHutOptimize: nodeCount > 100,
       barnesHutTheta: 0.5,
       strongGravityMode: false,
-      slowDown: 5,
+      slowDown: 1,
       outboundAttractionDistribution: true,
+      linLogMode: false,
       adjustSizes: true,
-      edgeWeightInfluence: 0.5,
+      edgeWeightInfluence: 1,
     },
   });
 
-  // Scale up so edges are clearly visible
-  const spreadFactor = Math.max(Math.sqrt(nodeCount) * 2.5, 3);
+  // Restore original sizes
   subgraph.forEachNode((node) => {
-    const x = subgraph.getNodeAttribute(node, "x") as number;
-    const y = subgraph.getNodeAttribute(node, "y") as number;
-    subgraph.setNodeAttribute(node, "x", x * spreadFactor);
-    subgraph.setNodeAttribute(node, "y", y * spreadFactor);
+    subgraph.setNodeAttribute(node, "size", originalSizes.get(node)!);
   });
 
-  // Remove overlaps with generous margin
+  // Remove overlaps
   noverlap.assign(subgraph, {
-    maxIterations: 200,
-    settings: { margin: 25, ratio: 2.5 },
+    maxIterations: 50,
+    settings: { margin: 15, ratio: 1.5, expansion: 1.1 },
   });
 
   const positions: PositionMap = new Map();

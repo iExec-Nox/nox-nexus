@@ -1,6 +1,8 @@
 import type { Handle, GraphNode, GraphEdge } from "./types";
 import {
   OPERATOR_COLORS,
+  EDGE_COLOR_TEAL,
+  EDGE_COLOR_VIOLET,
   NODE_SIZE_BASE,
   NODE_SIZE_PER_CONNECTION,
   NODE_SIZE_MAX,
@@ -69,16 +71,14 @@ export function buildGraph(handles: Handle[]): {
       if (edgeSet.has(edgeId)) continue;
       edgeSet.add(edgeId);
 
-      const sourceNode = nodeMap.get(parent.id);
-      const sourceColor = sourceNode
-        ? sourceNode.color
-        : getOperatorColor(parent.operator ?? "Default");
+      // Alternate between teal and violet edges (like GitNexus)
+      const edgeBase = edges.length % 2 === 0 ? EDGE_COLOR_TEAL : EDGE_COLOR_VIOLET;
 
       const edge: GraphEdge = {
         id: edgeId,
         source: parent.id,
         target: handle.id,
-        color: `${sourceColor}55`,
+        color: `${edgeBase}40`,
         size: 0.2,
       };
 
