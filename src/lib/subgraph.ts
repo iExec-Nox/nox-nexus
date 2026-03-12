@@ -57,34 +57,25 @@ const HANDLE_BY_ID_QUERY = gql`
   }
 `;
 
-const HANDLES_BY_OPERATOR_QUERY = gql`
-  query FetchHandlesByOperator($operator: String!, $first: Int!, $skip: Int!) {
-    handles(
+const RECENT_HANDLE_IDS_QUERY = gql`
+  query FetchRecentHandleIds($timestampGte: BigInt!, $first: Int!, $skip: Int!) {
+    handleRoles(
       first: $first
       skip: $skip
-      orderBy: id
-      where: { operator: $operator }
+      orderBy: blockTimestamp
+      orderDirection: desc
+      where: { blockTimestamp_gte: $timestampGte }
     ) {
-      id
-      isPubliclyDecryptable
-      plaintext
-      operator
-      transactionHash
-      parentHandles {
+      handle {
         id
-        operator
-      }
-      childHandles {
-        id
-        operator
       }
     }
   }
 `;
 
-const SEARCH_HANDLES_QUERY = gql`
-  query SearchHandles($idGte: Bytes!, $idLt: Bytes!, $first: Int!) {
-    handles(first: $first, where: { id_gte: $idGte, id_lt: $idLt }) {
+const HANDLES_BY_IDS_QUERY = gql`
+  query FetchHandlesByIds($ids: [Bytes!]!, $first: Int!, $skip: Int!) {
+    handles(first: $first, skip: $skip, where: { id_in: $ids }) {
       id
       isPubliclyDecryptable
       plaintext
@@ -118,7 +109,7 @@ const HANDLES_BY_ACCOUNT_QUERY = gql`
 
 const PAGE_SIZE = 1000;
 
-export async function fetchHandles(
+async function fetchHandles(
   first: number = PAGE_SIZE,
   skip: number = 0
 ): Promise<Handle[]> {
@@ -147,6 +138,55 @@ export async function fetchAllHandlesPaginated(): Promise<Handle[]> {
   return allHandles;
 }
 
+export async function fetchHandlesSince(sinceTimestamp: number): Promise<Handle[]> {
+  // Step 1: get all unique handle IDs with roles created since the timestamp
+  const handleIdSet = new Set<string>();
+  let skip = 0;
+
+  while (true) {
+    const data = await client.request<{
+      handleRoles: { handle: { id: string } }[];
+    }>(RECENT_HANDLE_IDS_QUERY, {
+      timestampGte: sinceTimestamp.toString(),
+      first: PAGE_SIZE,
+      skip,
+    });
+
+    for (const role of data.handleRoles) {
+      handleIdSet.add(role.handle.id);
+    }
+
+    if (data.handleRoles.length < PAGE_SIZE) break;
+    skip += PAGE_SIZE;
+  }
+
+  if (handleIdSet.size === 0) return [];
+
+  // Step 2: fetch full handle data for those IDs (batched)
+  const allIds = Array.from(handleIdSet);
+  const allHandles: Handle[] = [];
+  const BATCH = 100; // subgraph _in filter limit
+
+  for (let i = 0; i < allIds.length; i += BATCH) {
+    const batchIds = allIds.slice(i, i + BATCH);
+    let batchSkip = 0;
+
+    while (true) {
+      const data = await client.request<SubgraphHandlesResponse>(HANDLES_BY_IDS_QUERY, {
+        ids: batchIds,
+        first: PAGE_SIZE,
+        skip: batchSkip,
+      });
+
+      allHandles.push(...data.handles);
+      if (data.handles.length < PAGE_SIZE) break;
+      batchSkip += PAGE_SIZE;
+    }
+  }
+
+  return allHandles;
+}
+
 export async function fetchHandleById(
   id: string
 ): Promise<Handle | null> {
@@ -155,46 +195,6 @@ export async function fetchHandleById(
     { id }
   );
   return data.handle;
-}
-
-export async function fetchHandlesByOperator(
-  operator: string,
-  first: number = PAGE_SIZE,
-  skip: number = 0
-): Promise<Handle[]> {
-  const data = await client.request<SubgraphHandlesResponse>(
-    HANDLES_BY_OPERATOR_QUERY,
-    { operator, first, skip }
-  );
-  return data.handles;
-}
-
-/**
- * Increment a hex string by one to create an upper bound for prefix search.
- * For example, "0xab" becomes "0xac".
- */
-function incrementHex(hex: string): string {
-  const prefix = hex.startsWith("0x") ? "0x" : "";
-  const raw = hex.startsWith("0x") ? hex.slice(2) : hex;
-
-  const chars = raw.split("");
-  let carry = true;
-
-  for (let i = chars.length - 1; i >= 0 && carry; i--) {
-    const val = parseInt(chars[i], 16) + 1;
-    if (val > 15) {
-      chars[i] = "0";
-    } else {
-      chars[i] = val.toString(16);
-      carry = false;
-    }
-  }
-
-  if (carry) {
-    return prefix + "1" + chars.join("");
-  }
-
-  return prefix + chars.join("");
 }
 
 export async function fetchHandleIdsByAccount(
@@ -221,22 +221,4 @@ export async function fetchHandleIdsByAccount(
   }
 
   return [...new Set(allIds)];
-}
-
-export async function searchHandles(
-  query: string,
-  first: number = 100
-): Promise<Handle[]> {
-  const normalized = query.startsWith("0x") ? query : `0x${query}`;
-  const upperBound = incrementHex(normalized);
-
-  const data = await client.request<SubgraphHandlesResponse>(
-    SEARCH_HANDLES_QUERY,
-    {
-      idGte: normalized,
-      idLt: upperBound,
-      first,
-    }
-  );
-  return data.handles;
 }

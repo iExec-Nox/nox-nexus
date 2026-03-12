@@ -79,7 +79,7 @@ export function buildGraph(handles: Handle[]): {
         source: parent.id,
         target: handle.id,
         color: `${sourceColor}40`,
-        size: 0.2,
+        size: 0.5,
       };
 
       edges.push(edge);

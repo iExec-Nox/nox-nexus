@@ -3,95 +3,28 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import Graph from "graphology";
 import Sigma from "sigma";
-import EdgeCurveProgram from "@sigma/edge-curve";
+import { createEdgeCurveProgram } from "@sigma/edge-curve";
 import type { GraphNode, GraphEdge } from "@/lib/types";
 import { OPERATOR_COLORS } from "@/lib/constants";
 import { computeLayout, type LayoutMode } from "@/lib/graph-layouts";
-import type { Settings } from "sigma/settings";
-import type { NodeDisplayData, PartialButFor } from "sigma/types";
-
-type LabelData = PartialButFor<
-  NodeDisplayData,
-  "x" | "y" | "size" | "label" | "color"
->;
+import {
+  drawDarkLabel,
+  drawDarkHover,
+  truncateHandle,
+  mixWithRed,
+  DIM_COLOR,
+  DIM_EDGE_COLOR,
+} from "@/lib/graph-rendering";
 import ZoomControls from "./ZoomControls";
 import LayoutSelector from "./LayoutSelector";
 
-function drawDarkLabel(
-  context: CanvasRenderingContext2D,
-  data: LabelData,
-  settings: Settings
-): void {
-  if (!data.label) return;
-
-  const size = settings.labelSize;
-  const font = `${settings.labelFont}`;
-  context.font = `500 ${size}px ${font}`;
-
-  const textWidth = context.measureText(data.label).width;
-  const px = 6;
-  const py = 3;
-  const radius = 4;
-  const x = data.x + data.size + 4;
-  const y = data.y - (size + py * 2) / 2;
-  const w = textWidth + px * 2;
-  const h = size + py * 2;
-
-  context.beginPath();
-  context.roundRect(x, y, w, h, radius);
-  context.fillStyle = "rgba(20, 20, 27, 0.9)";
-  context.fill();
-  context.strokeStyle = "rgba(60, 63, 68, 0.6)";
-  context.lineWidth = 0.5;
-  context.stroke();
-
-  context.fillStyle = "#d3d3d8";
-  context.fillText(data.label, x + px, data.y + size / 3);
-}
-
-function drawDarkHover(
-  context: CanvasRenderingContext2D,
-  data: LabelData,
-  settings: Settings
-): void {
-  const size = data.size;
-
-  context.beginPath();
-  context.arc(data.x, data.y, size + 3, 0, Math.PI * 2);
-  context.fillStyle = `${data.color}40`;
-  context.fill();
-
-  context.beginPath();
-  context.arc(data.x, data.y, size, 0, Math.PI * 2);
-  context.fillStyle = data.color;
-  context.fill();
-
-  if (!data.label) return;
-
-  const fontSize = settings.labelSize + 1;
-  const font = `${settings.labelFont}`;
-  context.font = `600 ${fontSize}px ${font}`;
-
-  const textWidth = context.measureText(data.label).width;
-  const px = 8;
-  const py = 4;
-  const radius = 5;
-  const x = data.x + size + 5;
-  const y = data.y - (fontSize + py * 2) / 2;
-  const w = textWidth + px * 2;
-  const h = fontSize + py * 2;
-
-  context.beginPath();
-  context.roundRect(x, y, w, h, radius);
-  context.fillStyle = "rgba(20, 20, 27, 0.95)";
-  context.fill();
-  context.strokeStyle = `${data.color}60`;
-  context.lineWidth = 1;
-  context.stroke();
-
-  context.fillStyle = "#ffffff";
-  context.fillText(data.label, x + px, data.y + fontSize / 3);
-}
+const EdgeCurvedArrowProgram = createEdgeCurveProgram({
+  arrowHead: {
+    extremity: "target",
+    lengthToThicknessRatio: 5,
+    widenessToThicknessRatio: 4,
+  },
+});
 
 interface GraphCanvasProps {
   nodes: GraphNode[];
@@ -104,17 +37,8 @@ interface GraphCanvasProps {
   focusNodeId: string | null;
   layoutMode: LayoutMode;
   onLayoutChange: (mode: LayoutMode) => void;
+  unresolvedNodeIds?: Set<string>;
 }
-
-function truncateHandle(id: string): string {
-  if (id.length <= 12) return id;
-  const clean = id.startsWith("0x") ? id.slice(2) : id;
-  if (clean.length <= 10) return id;
-  return `0x${clean.slice(0, 6)}...${clean.slice(-4)}`;
-}
-
-const DIM_COLOR = "#202127";
-const DIM_EDGE_COLOR = "#2a2d4a";
 
 export default function GraphCanvas({
   nodes,
@@ -127,6 +51,7 @@ export default function GraphCanvas({
   focusNodeId,
   layoutMode,
   onLayoutChange,
+  unresolvedNodeIds,
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaRef = useRef<Sigma | null>(null);
@@ -143,6 +68,7 @@ export default function GraphCanvas({
   const selectedNodeIdRef = useRef<string | null>(selectedNodeId);
   const searchQueryRef = useRef<string>(searchQuery);
   const highlightedOperatorsRef = useRef<string[]>(highlightedOperators);
+  const unresolvedNodeIdsRef = useRef<Set<string> | null>(unresolvedNodeIds ?? null);
 
   // Store callbacks in refs to avoid tearing down Sigma on callback changes
   const onNodeClickRef = useRef(onNodeClick);
@@ -182,9 +108,9 @@ export default function GraphCanvas({
       if (graph.hasNode(edge.source) && graph.hasNode(edge.target)) {
         if (!graph.hasEdge(edge.id)) {
           graph.addEdgeWithKey(edge.id, edge.source, edge.target, {
-            size: edge.size ?? 0.2,
+            size: edge.size ?? 0.5,
             color: edge.color ?? "#1e2044",
-            type: "curve",
+            type: "curvedArrow",
           });
         }
       }
@@ -211,9 +137,9 @@ export default function GraphCanvas({
     graphRef.current = graph;
 
     const renderer = new Sigma(graph, containerRef.current, {
-      defaultEdgeType: "curve",
+      defaultEdgeType: "curvedArrow",
       edgeProgramClasses: {
-        curve: EdgeCurveProgram,
+        curvedArrow: EdgeCurvedArrowProgram,
       },
       defaultDrawNodeLabel: drawDarkLabel,
       defaultDrawNodeHover: drawDarkHover,
@@ -232,6 +158,8 @@ export default function GraphCanvas({
         const currentSelectedNodeId = selectedNodeIdRef.current;
         const currentSearchQuery = searchQueryRef.current;
         const currentHighlightedOperators = highlightedOperatorsRef.current;
+        const currentUnresolved = unresolvedNodeIdsRef.current;
+        const isUnresolved = currentUnresolved?.has(node) ?? false;
 
         const nodeAttrs = graph.getNodeAttributes(node);
         const operatorMatch =
@@ -248,6 +176,12 @@ export default function GraphCanvas({
           currentSelectedNodeId !== null &&
           graph.hasNode(currentSelectedNodeId) &&
           graph.areNeighbors(node, currentSelectedNodeId);
+
+        // Unresolved nodes: amber tint + slightly smaller
+        if (isUnresolved) {
+          res.color = mixWithRed(data.color ?? "#6b7280", 0.5);
+          res.size = (data.size ?? 2) * 0.75;
+        }
 
         if (hovered) {
           if (node === hovered || graph.areNeighbors(node, hovered)) {
@@ -523,6 +457,13 @@ export default function GraphCanvas({
       setSigmaInstance(null);
     };
   }, [mounted, nodes, edges, buildGraphInstance, layoutMode]);
+
+  // Update unresolved ref and refresh (no graph rebuild needed)
+  useEffect(() => {
+    unresolvedNodeIdsRef.current = unresolvedNodeIds ?? null;
+    const renderer = sigmaRef.current;
+    if (renderer) renderer.refresh();
+  }, [unresolvedNodeIds]);
 
   // Update refs and trigger a lightweight refresh when filter state changes.
   // The reducers already read from these refs, so no need to replace them.

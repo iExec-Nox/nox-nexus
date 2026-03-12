@@ -28,9 +28,6 @@ export const OPERATOR_COLORS: Record<string, string> = {
   Default: "#7c8bb4",              // slate blue
 };
 
-export const EDGE_COLOR_TEAL = "#0d9488";
-export const EDGE_COLOR_VIOLET = "#7c3aed";
-
 export const OPERATOR_LABELS: Record<string, string> = {
   PlaintextToEncrypted: "Plaintext to Encrypted",
   Add: "Add",

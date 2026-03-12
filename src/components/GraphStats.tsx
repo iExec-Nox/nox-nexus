@@ -3,7 +3,6 @@
 interface GraphStatsProps {
   nodeCount: number;
   edgeCount: number;
-  operatorCounts: Record<string, number>;
 }
 
 export default function GraphStats({

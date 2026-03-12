@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Handle } from "@/lib/types";
 import { OPERATOR_COLORS, OPERATOR_LABELS } from "@/lib/constants";
+import { decodeHandle } from "@/lib/handle-decode";
 
 interface HandleDetailPanelProps {
   handle: Handle | null;
@@ -128,6 +129,33 @@ export default function HandleDetailPanel({
                 <SectionLabel>Handle ID</SectionLabel>
                 <CopyableHex value={handle.id} />
               </div>
+
+              {(() => {
+                const info = decodeHandle(handle.id);
+                if (!info) return null;
+                return (
+                  <div className="flex gap-3">
+                    <div>
+                      <SectionLabel>Type</SectionLabel>
+                      <span className="inline-flex items-center rounded-md bg-violet-500/10 px-2 py-1 font-[family-name:var(--font-mono)] text-xs font-medium text-violet-400 border border-violet-500/20">
+                        {info.solidityType}
+                      </span>
+                    </div>
+                    <div>
+                      <SectionLabel>Chain ID</SectionLabel>
+                      <span className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-2 py-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-text-secondary)]">
+                        {info.chainId}
+                      </span>
+                    </div>
+                    <div>
+                      <SectionLabel>Version</SectionLabel>
+                      <span className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-2 py-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-text-secondary)]">
+                        v{info.version}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {handle.operator ? (
                 <div>

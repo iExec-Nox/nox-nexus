@@ -17,8 +17,8 @@ interface SidebarProps {
   onToggleNone: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-  showUnresolvedOnly: boolean;
-  onToggleUnresolved: () => void;
+  highlightUnresolved: boolean;
+  onToggleHighlightUnresolved: () => void;
   unresolvedCount: number;
   isLoadingStatuses: boolean;
 }
@@ -84,8 +84,8 @@ export default function Sidebar({
   onToggleNone,
   isCollapsed,
   onToggleCollapse,
-  showUnresolvedOnly,
-  onToggleUnresolved,
+  highlightUnresolved,
+  onToggleHighlightUnresolved,
   unresolvedCount,
   isLoadingStatuses,
 }: SidebarProps) {
@@ -148,10 +148,10 @@ export default function Sidebar({
               <div className="flex flex-col gap-0.5">
                 <div className="mb-2">
                   <button
-                    onClick={onToggleUnresolved}
+                    onClick={onToggleHighlightUnresolved}
                     disabled={isLoadingStatuses}
                     className={`group flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-all duration-150 ${
-                      showUnresolvedOnly
+                      highlightUnresolved
                         ? "bg-[var(--color-surface)]"
                         : "opacity-40 hover:opacity-70"
                     } ${isLoadingStatuses ? "opacity-50 cursor-not-allowed" : ""}`}
@@ -159,28 +159,28 @@ export default function Sidebar({
                     <span
                       className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150"
                       style={{
-                        backgroundColor: showUnresolvedOnly ? "#f59e0b" : "transparent",
-                        borderColor: showUnresolvedOnly ? "#f59e0b" : "var(--color-text-muted)",
-                        boxShadow: showUnresolvedOnly ? "0 0 6px #f59e0b40" : "none",
+                        backgroundColor: highlightUnresolved ? "#ef4444" : "transparent",
+                        borderColor: highlightUnresolved ? "#ef4444" : "var(--color-text-muted)",
+                        boxShadow: highlightUnresolved ? "0 0 6px #ef444440" : "none",
                       }}
                     >
-                      {showUnresolvedOnly && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+                      {highlightUnresolved && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
                     </span>
                     <AlertTriangle
                       className={`h-3 w-3 flex-shrink-0 ${
-                        showUnresolvedOnly ? "text-amber-400" : "text-[var(--color-text-muted)]"
+                        highlightUnresolved ? "text-red-400" : "text-[var(--color-text-muted)]"
                       }`}
                     />
                     <span
                       className={`flex-1 text-xs font-medium ${
-                        showUnresolvedOnly ? "text-amber-300" : "text-[var(--color-text-secondary)]"
+                        highlightUnresolved ? "text-red-300" : "text-[var(--color-text-secondary)]"
                       }`}
                     >
-                      {isLoadingStatuses ? "Loading statuses..." : "Unresolved only"}
+                      {isLoadingStatuses ? "Loading statuses..." : "Show unresolved"}
                     </span>
                     <span
                       className={`font-[family-name:var(--font-mono)] text-[10px] tabular-nums ${
-                        showUnresolvedOnly ? "text-amber-400" : "text-[var(--color-text-muted)]"
+                        highlightUnresolved ? "text-red-400" : "text-[var(--color-text-muted)]"
                       }`}
                     >
                       {isLoadingStatuses ? "..." : unresolvedCount}

@@ -1,6 +1,16 @@
 "use client";
 
-import { Search, RefreshCw, Hexagon } from "lucide-react";
+import { Search, RefreshCw, Hexagon, Clock } from "lucide-react";
+
+const TIMEFRAME_OPTIONS: { value: number | null; label: string }[] = [
+  { value: 1, label: "1h" },
+  { value: 6, label: "6h" },
+  { value: 24, label: "24h" },
+  { value: 48, label: "48h" },
+  { value: 168, label: "7d" },
+  { value: 720, label: "30d" },
+  { value: null, label: "All" },
+];
 
 interface HeaderProps {
   searchQuery: string;
@@ -10,6 +20,10 @@ interface HeaderProps {
   onRefresh: () => void;
   isAddressSearch?: boolean;
   addressHandleCount?: number;
+  isTxSearch?: boolean;
+  txHandleCount?: number;
+  timeframeHours: number | null;
+  onTimeframeChange: (hours: number | null) => void;
 }
 
 export default function Header({
@@ -20,6 +34,10 @@ export default function Header({
   onRefresh,
   isAddressSearch,
   addressHandleCount,
+  isTxSearch,
+  txHandleCount,
+  timeframeHours,
+  onTimeframeChange,
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-xl">
@@ -45,7 +63,7 @@ export default function Header({
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search by handle ID or address..."
+            placeholder="Search by handle ID, address, or tx hash..."
             className="glow-ring h-8 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 pl-9 pr-3 text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] backdrop-blur-md outline-none transition-all duration-200 focus:border-[var(--color-accent-dim)] font-[family-name:var(--font-mono)]"
           />
           {isAddressSearch && (
@@ -56,9 +74,34 @@ export default function Header({
               </span>
             </div>
           )}
+          {isTxSearch && (
+            <div className="absolute -bottom-6 left-0 right-0 flex items-center gap-1.5 px-3">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />
+              <span className="text-[10px] text-[var(--color-text-muted)]">
+                Showing {txHandleCount ?? 0} handles for transaction
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-0.5">
+            <Clock className="ml-1.5 h-3 w-3 text-[var(--color-text-muted)]" />
+            {TIMEFRAME_OPTIONS.map((opt) => (
+              <button
+                key={opt.label}
+                onClick={() => onTimeframeChange(opt.value)}
+                className={`rounded-md px-2 py-1 text-[10px] font-medium transition-all duration-150 ${
+                  timeframeHours === opt.value
+                    ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
           <div className="stat-pill flex items-center gap-2 rounded-full px-3 py-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-[family-name:var(--font-mono)] text-xs font-medium text-[var(--color-text-primary)]">
