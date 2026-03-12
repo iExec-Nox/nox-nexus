@@ -114,7 +114,7 @@ function truncateHandle(id: string): string {
 }
 
 const DIM_COLOR = "#202127";
-const DIM_EDGE_COLOR = "#555568";
+const DIM_EDGE_COLOR = "#2a2d4a";
 
 export default function GraphCanvas({
   nodes,
@@ -182,8 +182,8 @@ export default function GraphCanvas({
       if (graph.hasNode(edge.source) && graph.hasNode(edge.target)) {
         if (!graph.hasEdge(edge.id)) {
           graph.addEdgeWithKey(edge.id, edge.source, edge.target, {
-            size: edge.size ?? 1,
-            color: edge.color ?? "#2a2a35",
+            size: edge.size ?? 0.2,
+            color: edge.color ?? "#1e2044",
             type: "curve",
           });
         }
@@ -222,7 +222,7 @@ export default function GraphCanvas({
       labelDensity: 0.03,
       labelGridCellSize: 250,
       labelColor: { color: "#d3d3d8" },
-      defaultEdgeColor: "#2a2a35",
+      defaultEdgeColor: "#1e2044",
       defaultNodeColor: "#6b7280",
       renderLabels: false,
       labelRenderedSizeThreshold: 6,
@@ -298,7 +298,7 @@ export default function GraphCanvas({
           if (src === hovered || tgt === hovered) {
             const baseColor = (res.color ?? "").replace(/[0-9a-f]{2}$/i, "");
             res.color = baseColor || res.color;
-            res.size = 2;
+            res.size = 1;
           } else {
             res.color = DIM_EDGE_COLOR;
           }
@@ -310,7 +310,7 @@ export default function GraphCanvas({
             // Boost connected edges: remove alpha suffix, increase size
             const baseColor = (res.color ?? "").replace(/[0-9a-f]{2}$/i, "");
             res.color = baseColor || res.color;
-            res.size = 2;
+            res.size = 1;
           } else {
             res.color = DIM_EDGE_COLOR;
           }

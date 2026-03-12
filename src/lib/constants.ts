@@ -5,27 +5,27 @@ export const GATEWAY_URL =
   "https://nox-gateway.arbitrum-sepolia-testnet.iex.ec";
 
 export const OPERATOR_COLORS: Record<string, string> = {
-  PlaintextToEncrypted: "#a855f7",
-  Add: "#10b981",
-  Sub: "#f59e0b",
-  Mul: "#3b82f6",
-  Div: "#ec4899",
-  Eq: "#6366f1",
-  Ne: "#6366f1",
-  Lt: "#6366f1",
-  Le: "#6366f1",
-  Gt: "#6366f1",
-  Ge: "#6366f1",
-  SafeAdd: "#14b8a6",
-  SafeSub: "#14b8a6",
-  SafeMul: "#14b8a6",
-  SafeDiv: "#14b8a6",
-  Select: "#f97316",
-  Transfer: "#ef4444",
-  Mint: "#22c55e",
-  Burn: "#dc2626",
-  EncryptedInput: "#38bdf8",
-  Default: "#64748b",
+  PlaintextToEncrypted: "#a855f7", // violet
+  Add: "#6d8cf7",                  // periwinkle blue
+  Sub: "#818cf8",                  // indigo
+  Mul: "#3b82f6",                  // blue
+  Div: "#7c6ef0",                  // blue-violet
+  Eq: "#6366f1",                   // indigo
+  Ne: "#7c7cf8",                   // light indigo
+  Lt: "#5b5bd6",                   // deep indigo
+  Le: "#5b5bd6",
+  Gt: "#5b5bd6",
+  Ge: "#5b5bd6",
+  SafeAdd: "#38bdf8",              // sky blue
+  SafeSub: "#47a5f5",              // medium blue
+  SafeMul: "#5eaff2",              // soft blue
+  SafeDiv: "#5eaff2",
+  Select: "#c084fc",               // light purple
+  Transfer: "#d970e0",             // magenta-pink
+  Mint: "#60a5fa",                 // cornflower blue
+  Burn: "#b46eeb",                 // purple
+  EncryptedInput: "#22d3ee",       // cyan
+  Default: "#7a88a8",              // blue-grey
 };
 
 export const OPERATOR_LABELS: Record<string, string> = {

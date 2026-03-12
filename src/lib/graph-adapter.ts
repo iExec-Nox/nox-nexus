@@ -78,8 +78,8 @@ export function buildGraph(handles: Handle[]): {
         id: edgeId,
         source: parent.id,
         target: handle.id,
-        color: `${sourceColor}66`,
-        size: 1,
+        color: `${sourceColor}55`,
+        size: 0.2,
       };
 
       edges.push(edge);

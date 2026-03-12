@@ -64,7 +64,7 @@ export function computeLayout(graph: Graph, mode: LayoutMode): PositionMap {
       if (dist > maxRadius) maxRadius = dist;
     });
 
-    componentData.push({ nodes: componentNodes, radius: maxRadius + 40 });
+    componentData.push({ nodes: componentNodes, radius: maxRadius + 80 });
   }
 
   // Arrange components in a spiral layout (golden angle)
@@ -79,9 +79,9 @@ export function computeLayout(graph: Graph, mode: LayoutMode): PositionMap {
       offsetX = 0;
       offsetY = 0;
     } else {
-      let spiralR = largestRadius + comp.radius + 120;
+      let spiralR = largestRadius + comp.radius + 200;
       for (let j = 1; j < i; j++) {
-        spiralR += componentData[j].radius * 0.4 + 80;
+        spiralR += componentData[j].radius * 0.5 + 120;
       }
       offsetX = Math.cos(angle) * spiralR;
       offsetY = Math.sin(angle) * spiralR;
@@ -122,50 +122,43 @@ function layoutForce(graph: Graph, componentNodes: string[]): PositionMap {
     subgraph.setNodeAttribute(nodeId, "y", (Math.random() - 0.5) * initSpread);
   });
 
+  const nodeCount = componentNodes.length;
+
   forceAtlas2.assign(subgraph, {
-    iterations: 600,
+    iterations: nodeCount < 200 ? 800 : nodeCount < 1000 ? 1200 : 2000,
     settings: {
-      gravity: 1.5,
-      scalingRatio: 200,
-      barnesHutOptimize: subgraph.order > 50,
-      strongGravityMode: true,
-      slowDown: 8,
+      gravity: 0.5,
+      scalingRatio: nodeCount < 200 ? 400 : nodeCount < 1000 ? 600 : 800,
+      barnesHutOptimize: nodeCount > 50,
+      barnesHutTheta: 0.5,
+      strongGravityMode: false,
+      slowDown: 5,
       outboundAttractionDistribution: true,
       adjustSizes: true,
+      edgeWeightInfluence: 0.5,
     },
   });
 
-  // Scale based on average edge length
-  let totalEdgeLen = 0;
-  let edgeCount = 0;
-  subgraph.forEachEdge((_e, _a, src, tgt) => {
-    const sx = subgraph.getNodeAttribute(src, "x") as number;
-    const sy = subgraph.getNodeAttribute(src, "y") as number;
-    const tx = subgraph.getNodeAttribute(tgt, "x") as number;
-    const ty = subgraph.getNodeAttribute(tgt, "y") as number;
-    totalEdgeLen += Math.sqrt((sx - tx) ** 2 + (sy - ty) ** 2);
-    edgeCount++;
+  // Scale up so edges are clearly visible
+  const spreadFactor = Math.max(Math.sqrt(nodeCount) * 2.5, 3);
+  subgraph.forEachNode((node) => {
+    const x = subgraph.getNodeAttribute(node, "x") as number;
+    const y = subgraph.getNodeAttribute(node, "y") as number;
+    subgraph.setNodeAttribute(node, "x", x * spreadFactor);
+    subgraph.setNodeAttribute(node, "y", y * spreadFactor);
   });
-  const avgEdgeLen = edgeCount > 0 ? totalEdgeLen / edgeCount : 1;
-  const scale = Math.max(avgEdgeLen > 0 ? 120 / avgEdgeLen : 1, 1.5);
 
-  // Apply noverlap
-  const nGraph = new Graph();
-  for (const nodeId of componentNodes) {
-    const x = (subgraph.getNodeAttribute(nodeId, "x") as number) * scale;
-    const y = (subgraph.getNodeAttribute(nodeId, "y") as number) * scale;
-    nGraph.addNode(nodeId, { ...subgraph.getNodeAttributes(nodeId), x, y });
-  }
-  noverlap.assign(nGraph, {
-    maxIterations: 300,
-    settings: { margin: 15, ratio: 3 },
+  // Remove overlaps with generous margin
+  noverlap.assign(subgraph, {
+    maxIterations: 200,
+    settings: { margin: 25, ratio: 2.5 },
   });
 
   const positions: PositionMap = new Map();
   for (const nodeId of componentNodes) {
     positions.set(nodeId, {
-      x: nGraph.getNodeAttribute(nodeId, "x") as number,
-      y: nGraph.getNodeAttribute(nodeId, "y") as number,
+      x: subgraph.getNodeAttribute(nodeId, "x") as number,
+      y: subgraph.getNodeAttribute(nodeId, "y") as number,
     });
   }
   return positions;
