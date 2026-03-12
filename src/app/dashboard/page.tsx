@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { ALL_OPERATORS } from "@/lib/constants";
 import type { LayoutMode } from "@/lib/graph-layouts";
 import {
@@ -29,14 +30,57 @@ import HandleDetailPanel from "@/components/HandleDetailPanel";
 import LoadingOverlay from "@/components/LoadingOverlay";
 
 export default function Home() {
-  const [searchQuery, setSearchQuery] = useState("");
+  return (
+    <Suspense>
+      <Dashboard />
+    </Suspense>
+  );
+}
+
+function Dashboard() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const initialSearch = searchParams.get("search") ?? "";
+  const initialTimeframe = searchParams.get("timeframe");
+  const parsedTimeframe = initialTimeframe === "all" ? null
+    : initialTimeframe ? Number(initialTimeframe) || 48
+    : 48;
+
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedOperators, setSelectedOperators] = useState<string[]>([
     ...ALL_OPERATORS,
   ]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("force");
-  const [timeframeHours, setTimeframeHours] = useState<number | null>(48);
+  const [timeframeHours, setTimeframeHours] = useState<number | null>(parsedTimeframe);
   const [highlightUnresolved, setHighlightUnresolved] = useState(false);
+
+  // Sync search query and timeframe to URL
+  // Note: searchParams is intentionally excluded from deps to avoid an
+  // infinite loop (router.replace updates searchParams, which would re-trigger).
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const q = searchQuery.trim();
+    if (q) {
+      params.set("search", q);
+    } else {
+      params.delete("search");
+    }
+    if (timeframeHours === null) {
+      params.set("timeframe", "all");
+    } else if (timeframeHours !== 48) {
+      params.set("timeframe", String(timeframeHours));
+    } else {
+      params.delete("timeframe");
+    }
+    router.replace(`/dashboard?${params.toString()}`, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, timeframeHours, router]);
 
   const {
     handles,

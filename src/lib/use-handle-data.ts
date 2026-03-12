@@ -122,6 +122,13 @@ export function useHandleFiltering(
       setTxFilterIds(null);
       return;
     }
+    // If the query matches an existing handle ID, don't treat it as a tx hash
+    // (handle IDs and tx hashes have the same format: 0x + 64 hex chars)
+    const isKnownHandle = handles.some((h) => h.id.toLowerCase() === q);
+    if (isKnownHandle) {
+      setTxFilterIds(null);
+      return;
+    }
     const ids = new Set(
       handles.filter((h) => h.transactionHash?.toLowerCase() === q).map((h) => h.id)
     );

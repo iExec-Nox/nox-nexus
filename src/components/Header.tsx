@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, RefreshCw, Hexagon, Clock } from "lucide-react";
+import { Search, RefreshCw, Hexagon, Clock, X } from "lucide-react";
 
 const TIMEFRAME_OPTIONS: { value: number | null; label: string }[] = [
   { value: 1, label: "1h" },
@@ -64,8 +64,16 @@ export default function Header({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search by handle ID, address, or tx hash..."
-            className="glow-ring h-8 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 pl-9 pr-3 text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] backdrop-blur-md outline-none transition-all duration-200 focus:border-[var(--color-accent-dim)] font-[family-name:var(--font-mono)]"
+            className="glow-ring h-8 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 pl-9 pr-8 text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] backdrop-blur-md outline-none transition-all duration-200 focus:border-[var(--color-accent-dim)] font-[family-name:var(--font-mono)]"
           />
+          {searchQuery && (
+            <button
+              onClick={() => onSearchChange("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center h-4 w-4 rounded-full text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
           {isAddressSearch && (
             <div className="absolute -bottom-6 left-0 right-0 flex items-center gap-1.5 px-3">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />

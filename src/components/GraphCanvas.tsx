@@ -60,6 +60,8 @@ export default function GraphCanvas({
   const draggedNodeRef = useRef<string | null>(null);
   const isDraggingRef = useRef(false);
   const animFrameRef = useRef<number | null>(null);
+  const pendingFocusRef = useRef<string | null>(null);
+  const layoutReadyRef = useRef(false);
   const [sigmaInstance, setSigmaInstance] = useState<Sigma | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -86,6 +88,23 @@ export default function GraphCanvas({
   useEffect(() => {
     onBackgroundClickRef.current = onBackgroundClick;
   }, [onBackgroundClick]);
+
+  // Focus camera on a node (must be called when layout is stable)
+  const focusCameraOnNode = useCallback((nodeId: string) => {
+    const r = sigmaRef.current;
+    const g = graphRef.current;
+    if (!r || !g || !g.hasNode(nodeId)) return;
+
+    const graphX = g.getNodeAttribute(nodeId, "x") as number;
+    const graphY = g.getNodeAttribute(nodeId, "y") as number;
+    const viewportCoords = r.graphToViewport({ x: graphX, y: graphY });
+    const framedCoords = r.viewportToFramedGraph(viewportCoords);
+
+    r.getCamera().animate(
+      { x: framedCoords.x, y: framedCoords.y, ratio: 0.3 },
+      { duration: 600 }
+    );
+  }, []);
 
   const buildGraphInstance = useCallback(() => {
     const graph = new Graph();
@@ -122,6 +141,8 @@ export default function GraphCanvas({
   useEffect(() => {
     if (!mounted || !containerRef.current) return;
 
+    layoutReadyRef.current = false;
+
     if (sigmaRef.current) {
       sigmaRef.current.kill();
       sigmaRef.current = null;
@@ -145,8 +166,8 @@ export default function GraphCanvas({
       defaultDrawNodeHover: drawDarkHover,
       labelFont: "JetBrains Mono, monospace",
       labelSize: 11,
-      labelDensity: 0.03,
-      labelGridCellSize: 250,
+      labelDensity: 0.02,
+      labelGridCellSize: 400,
       labelColor: { color: "#d3d3d8" },
       defaultEdgeColor: "#1e2044",
       defaultNodeColor: "#6b7280",
@@ -199,7 +220,8 @@ export default function GraphCanvas({
             res.highlighted = true;
             res.size = (data.size ?? 6) * 1.5;
           } else if (isSelectedNeighbor) {
-            res.highlighted = true;
+            // Keep visible and slightly larger, but no label to avoid overlap
+            res.size = (data.size ?? 2) * 1.2;
           } else {
             res.color = DIM_COLOR;
             res.label = "";
@@ -379,6 +401,15 @@ export default function GraphCanvas({
 
       renderer.refresh();
       renderer.getCamera().setState({ x: 0.5, y: 0.5, ratio: 1, angle: 0 });
+
+      // Layout is ready immediately for small graphs
+      layoutReadyRef.current = true;
+      if (pendingFocusRef.current) {
+        const id = pendingFocusRef.current;
+        pendingFocusRef.current = null;
+        // Small delay to let sigma process the refresh
+        setTimeout(() => focusCameraOnNode(id), 50);
+      }
     } else {
       // --- Animated settling for large graphs ---
       // Compute graph center and bounding box
@@ -438,6 +469,13 @@ export default function GraphCanvas({
           animFrameRef.current = requestAnimationFrame(animateStep);
         } else {
           animFrameRef.current = null;
+          // Layout animation complete: process pending focus
+          layoutReadyRef.current = true;
+          if (pendingFocusRef.current) {
+            const id = pendingFocusRef.current;
+            pendingFocusRef.current = null;
+            setTimeout(() => focusCameraOnNode(id), 50);
+          }
         }
       }
 
@@ -456,7 +494,7 @@ export default function GraphCanvas({
       }
       setSigmaInstance(null);
     };
-  }, [mounted, nodes, edges, buildGraphInstance, layoutMode]);
+  }, [mounted, nodes, edges, buildGraphInstance, layoutMode, focusCameraOnNode]);
 
   // Update unresolved ref and refresh (no graph rebuild needed)
   useEffect(() => {
@@ -480,37 +518,20 @@ export default function GraphCanvas({
 
   // Animate camera to focus on a specific node
   useEffect(() => {
-    const renderer = sigmaRef.current;
-    const graph = graphRef.current;
-    if (!renderer || !graph || !focusNodeId) return;
-    if (!graph.hasNode(focusNodeId)) return;
+    if (!focusNodeId) {
+      pendingFocusRef.current = null;
+      return;
+    }
 
-    // Get node position in graph space
-    const nodeX = graph.getNodeAttribute(focusNodeId, "x") as number;
-    const nodeY = graph.getNodeAttribute(focusNodeId, "y") as number;
-
-    // Compute graph bounding box to normalize to framed graph coords [0,1]
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    graph.forEachNode((_, attrs) => {
-      const x = attrs.x as number;
-      const y = attrs.y as number;
-      if (x < minX) minX = x;
-      if (x > maxX) maxX = x;
-      if (y < minY) minY = y;
-      if (y > maxY) maxY = y;
-    });
-
-    const rangeX = maxX - minX || 1;
-    const rangeY = maxY - minY || 1;
-    const framedX = (nodeX - minX) / rangeX;
-    const framedY = (nodeY - minY) / rangeY;
-
-    const camera = renderer.getCamera();
-    camera.animate(
-      { x: framedX, y: framedY, ratio: 0.1 },
-      { duration: 600 }
-    );
-  }, [focusNodeId]);
+    if (layoutReadyRef.current) {
+      // Layout is stable: focus immediately (small delay for sigma refresh)
+      const timeoutId = setTimeout(() => focusCameraOnNode(focusNodeId), 50);
+      return () => clearTimeout(timeoutId);
+    } else {
+      // Layout animation in progress: defer until it completes
+      pendingFocusRef.current = focusNodeId;
+    }
+  }, [focusNodeId, focusCameraOnNode]);
 
   if (!mounted) {
     return (

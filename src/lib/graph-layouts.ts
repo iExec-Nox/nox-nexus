@@ -129,17 +129,17 @@ function layoutForce(graph: Graph, componentNodes: string[]): PositionMap {
   subgraph.forEachNode((node) => {
     const s = subgraph.getNodeAttribute(node, "size") as number;
     originalSizes.set(node, s);
-    subgraph.setNodeAttribute(node, "size", s * 12);
+    subgraph.setNodeAttribute(node, "size", s * 30);
   });
 
   const inferred = forceAtlas2.inferSettings(subgraph);
 
   forceAtlas2.assign(subgraph, {
-    iterations: nodeCount < 200 ? 1000 : nodeCount < 1000 ? 2500 : 4000,
+    iterations: nodeCount < 200 ? 1500 : nodeCount < 1000 ? 3000 : 5000,
     settings: {
       ...inferred,
-      gravity: 0.05,
-      scalingRatio: nodeCount < 200 ? 400 : nodeCount < 1000 ? 600 : 800,
+      gravity: 0.01,
+      scalingRatio: nodeCount < 200 ? 1500 : nodeCount < 1000 ? 2500 : 3500,
       barnesHutOptimize: nodeCount > 100,
       barnesHutTheta: 0.5,
       strongGravityMode: false,
@@ -157,7 +157,6 @@ function layoutForce(graph: Graph, componentNodes: string[]): PositionMap {
   });
 
   // Scale all positions outward from center to create spacing
-  // The idea: multiply all positions by a factor so nodes are further apart
   if (nodeCount > 1) {
     let cx = 0, cy = 0;
     subgraph.forEachNode((node) => {
@@ -167,8 +166,7 @@ function layoutForce(graph: Graph, componentNodes: string[]): PositionMap {
     cx /= nodeCount;
     cy /= nodeCount;
 
-    // Scale factor: bigger for larger components
-    const scaleFactor = nodeCount < 50 ? 3 : nodeCount < 200 ? 5 : 7;
+    const scaleFactor = nodeCount < 50 ? 8 : nodeCount < 200 ? 14 : 20;
     subgraph.forEachNode((node) => {
       const x = subgraph.getNodeAttribute(node, "x") as number;
       const y = subgraph.getNodeAttribute(node, "y") as number;
@@ -180,7 +178,7 @@ function layoutForce(graph: Graph, componentNodes: string[]): PositionMap {
   // Final noverlap pass with large margin
   noverlap.assign(subgraph, {
     maxIterations: 500,
-    settings: { margin: 80, ratio: 5, expansion: 2.0 },
+    settings: { margin: 300, ratio: 10, expansion: 3.0 },
   });
 
   const positions: PositionMap = new Map();
