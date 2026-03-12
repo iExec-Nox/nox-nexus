@@ -21,6 +21,7 @@ interface HandleDetailPanelProps {
   handle: Handle | null;
   onClose: () => void;
   onHandleClick: (id: string) => void;
+  onAddressSearch: (address: string) => void;
   isResolved: boolean | null;
   isLoadingStatus: boolean;
 }
@@ -92,6 +93,7 @@ export default function HandleDetailPanel({
   handle,
   onClose,
   onHandleClick,
+  onAddressSearch,
   isResolved,
   isLoadingStatus,
 }: HandleDetailPanelProps) {
@@ -302,8 +304,17 @@ export default function HandleDetailPanel({
                             key={role.id}
                             className="border-b border-[var(--color-border-subtle)] last:border-0"
                           >
-                            <td className="px-2 py-1.5 font-[family-name:var(--font-mono)] text-[var(--color-text-secondary)]">
-                              {truncateHex(role.account, 6)}
+                            <td className="px-2 py-1.5">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => onAddressSearch(role.account)}
+                                  className="font-[family-name:var(--font-mono)] text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-accent)] cursor-pointer"
+                                  title="Search handles for this address"
+                                >
+                                  {truncateHex(role.account, 6)}
+                                </button>
+                                <CopyIconButton value={role.account} />
+                              </div>
                             </td>
                             <td className="px-2 py-1.5">
                               <span
@@ -316,8 +327,17 @@ export default function HandleDetailPanel({
                                 {role.role}
                               </span>
                             </td>
-                            <td className="px-2 py-1.5 font-[family-name:var(--font-mono)] text-[var(--color-text-muted)]">
-                              {truncateHex(role.grantedBy, 6)}
+                            <td className="px-2 py-1.5">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => onAddressSearch(role.grantedBy)}
+                                  className="font-[family-name:var(--font-mono)] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-accent)] cursor-pointer"
+                                  title="Search handles for this address"
+                                >
+                                  {truncateHex(role.grantedBy, 6)}
+                                </button>
+                                <CopyIconButton value={role.grantedBy} />
+                              </div>
                             </td>
                           </tr>
                         ))}

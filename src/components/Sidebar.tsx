@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Filter, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, AlertTriangle, Check } from "lucide-react";
 import {
   OPERATOR_COLORS,
   OPERATOR_LABELS,
@@ -42,16 +42,19 @@ function OperatorButton({
       className={`group flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-all duration-150 ${
         isSelected
           ? "bg-[var(--color-surface)]"
-          : "opacity-30 hover:opacity-60"
+          : "opacity-40 hover:opacity-70"
       }`}
     >
       <span
-        className="h-2 w-2 flex-shrink-0 rounded-full transition-shadow duration-150"
+        className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded transition-all duration-150 border"
         style={{
-          backgroundColor: color,
-          boxShadow: isSelected ? `0 0 6px ${color}60` : "none",
+          backgroundColor: isSelected ? color : "transparent",
+          borderColor: isSelected ? color : "var(--color-text-muted)",
+          boxShadow: isSelected ? `0 0 6px ${color}40` : "none",
         }}
-      />
+      >
+        {isSelected && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+      </span>
       <span className="flex-1 truncate text-xs text-[var(--color-text-secondary)]">
         {OPERATOR_LABELS[op] ?? op}
       </span>
@@ -120,38 +123,6 @@ export default function Sidebar({
       ) : (
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto px-3 pt-4 pb-4">
-            <div className="mb-4">
-              <button
-                onClick={onToggleUnresolved}
-                disabled={isLoadingStatuses}
-                className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-all duration-150 border ${
-                  showUnresolvedOnly
-                    ? "border-amber-500/40 bg-amber-500/10"
-                    : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-subtle)]"
-                } ${isLoadingStatuses ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <AlertTriangle
-                  className={`h-3.5 w-3.5 flex-shrink-0 ${
-                    showUnresolvedOnly ? "text-amber-400" : "text-[var(--color-text-muted)]"
-                  }`}
-                />
-                <span
-                  className={`flex-1 text-xs font-medium ${
-                    showUnresolvedOnly ? "text-amber-300" : "text-[var(--color-text-secondary)]"
-                  }`}
-                >
-                  {isLoadingStatuses ? "Loading statuses..." : "Unresolved only"}
-                </span>
-                <span
-                  className={`font-[family-name:var(--font-mono)] text-[10px] tabular-nums ${
-                    showUnresolvedOnly ? "text-amber-400" : "text-[var(--color-text-muted)]"
-                  }`}
-                >
-                  {isLoadingStatuses ? "..." : unresolvedCount}
-                </span>
-              </button>
-            </div>
-
             <div className="mb-5">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -175,6 +146,37 @@ export default function Sidebar({
               </div>
 
               <div className="flex flex-col gap-0.5">
+                <div className="mb-2">
+                  <button
+                    onClick={onToggleUnresolved}
+                    disabled={isLoadingStatuses}
+                    className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-all duration-150 border ${
+                      showUnresolvedOnly
+                        ? "border-amber-500/40 bg-amber-500/10"
+                        : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-subtle)]"
+                    } ${isLoadingStatuses ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <AlertTriangle
+                      className={`h-3.5 w-3.5 flex-shrink-0 ${
+                        showUnresolvedOnly ? "text-amber-400" : "text-[var(--color-text-muted)]"
+                      }`}
+                    />
+                    <span
+                      className={`flex-1 text-xs font-medium ${
+                        showUnresolvedOnly ? "text-amber-300" : "text-[var(--color-text-secondary)]"
+                      }`}
+                    >
+                      {isLoadingStatuses ? "Loading statuses..." : "Unresolved only"}
+                    </span>
+                    <span
+                      className={`font-[family-name:var(--font-mono)] text-[10px] tabular-nums ${
+                        showUnresolvedOnly ? "text-amber-400" : "text-[var(--color-text-muted)]"
+                      }`}
+                    >
+                      {isLoadingStatuses ? "..." : unresolvedCount}
+                    </span>
+                  </button>
+                </div>
                 {presentOffChainOps.length > 0 && (
                   <>
                     <CategoryHeader>Off-chain</CategoryHeader>

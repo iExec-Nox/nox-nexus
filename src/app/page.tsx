@@ -6,7 +6,7 @@ import { ALL_OPERATORS } from "@/lib/constants";
 import {
   fetchAllHandlesPaginated,
   fetchHandleById,
-  fetchHandleIdsByAdmin,
+  fetchHandleIdsByAccount,
 } from "@/lib/subgraph";
 import { buildGraph } from "@/lib/graph-adapter";
 import {
@@ -49,6 +49,13 @@ export default function Home() {
     boolean | null
   >(null);
   const [isLoadingSelectedStatus, setIsLoadingSelectedStatus] = useState(false);
+  const [addressFilterIds, setAddressFilterIds] = useState<Set<string> | null>(null);
+  const [isLoadingAddressFilter, setIsLoadingAddressFilter] = useState(false);
+
+  const isEthAddress = useCallback(
+    (q: string) => /^0x[0-9a-fA-F]{40}$/.test(q.trim()),
+    []
+  );
 
   const loadHandles = useCallback(async () => {
     setIsLoading(true);
@@ -75,6 +82,28 @@ export default function Home() {
       .finally(() => setIsLoadingStatuses(false));
   }, [handles]);
 
+  // Fetch handle IDs when an Ethereum address is entered in search
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!isEthAddress(q)) {
+      setAddressFilterIds(null);
+      return;
+    }
+    let cancelled = false;
+    setIsLoadingAddressFilter(true);
+    fetchHandleIdsByAccount(q)
+      .then((ids) => {
+        if (!cancelled) setAddressFilterIds(new Set(ids));
+      })
+      .catch(() => {
+        if (!cancelled) setAddressFilterIds(new Set());
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingAddressFilter(false);
+      });
+    return () => { cancelled = true; };
+  }, [searchQuery, isEthAddress]);
+
   const { nodes, edges } = useMemo(() => buildGraph(handles), [handles]);
 
   const filteredNodes = useMemo(
@@ -82,9 +111,10 @@ export default function Home() {
       nodes.filter((n) => {
         if (!selectedOperators.includes(n.operator)) return false;
         if (showUnresolvedOnly && handleStatuses[n.id] !== false) return false;
+        if (addressFilterIds !== null && !addressFilterIds.has(n.id)) return false;
         return true;
       }),
-    [nodes, selectedOperators, showUnresolvedOnly, handleStatuses]
+    [nodes, selectedOperators, showUnresolvedOnly, handleStatuses, addressFilterIds]
   );
 
   const filteredNodeIds = useMemo(
@@ -135,9 +165,11 @@ export default function Home() {
   }, []);
 
   const handleNodeClick = useCallback(async (nodeId: string) => {
-    setSearchQuery("");
+    if (!isEthAddress(searchQuery.trim())) {
+      setSearchQuery("");
+    }
     await selectNode(nodeId);
-  }, [selectNode]);
+  }, [selectNode, searchQuery, isEthAddress]);
 
   const handleBackgroundClick = useCallback(() => {
     setSelectedNodeId(null);
@@ -192,6 +224,8 @@ export default function Home() {
         handleCount={handles.length}
         isLoading={isLoading}
         onRefresh={loadHandles}
+        isAddressSearch={addressFilterIds !== null}
+        addressHandleCount={addressFilterIds?.size}
       />
 
       <div className="relative flex flex-1 overflow-hidden">
@@ -234,6 +268,7 @@ export default function Home() {
           handle={selectedHandle}
           onClose={handleBackgroundClick}
           onHandleClick={handleDetailClick}
+          onAddressSearch={setSearchQuery}
           isResolved={selectedHandleResolved}
           isLoadingStatus={isLoadingSelectedStatus}
         />

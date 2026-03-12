@@ -102,12 +102,12 @@ const SEARCH_HANDLES_QUERY = gql`
   }
 `;
 
-const HANDLES_BY_ADMIN_QUERY = gql`
-  query FetchHandlesByAdmin($account: Bytes!, $first: Int!, $skip: Int!) {
+const HANDLES_BY_ACCOUNT_QUERY = gql`
+  query FetchHandlesByAccount($account: Bytes!, $first: Int!, $skip: Int!) {
     handleRoles(
       first: $first
       skip: $skip
-      where: { account: $account, role: ADMIN }
+      where: { account: $account, role_in: [ADMIN, VIEWER] }
     ) {
       handle {
         id
@@ -197,7 +197,7 @@ function incrementHex(hex: string): string {
   return prefix + chars.join("");
 }
 
-export async function fetchHandleIdsByAdmin(
+export async function fetchHandleIdsByAccount(
   account: string
 ): Promise<string[]> {
   const allIds: string[] = [];
@@ -206,7 +206,7 @@ export async function fetchHandleIdsByAdmin(
   while (true) {
     const data = await client.request<{
       handleRoles: { handle: { id: string } }[];
-    }>(HANDLES_BY_ADMIN_QUERY, {
+    }>(HANDLES_BY_ACCOUNT_QUERY, {
       account: account.toLowerCase(),
       first: PAGE_SIZE,
       skip,

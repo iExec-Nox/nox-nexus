@@ -8,6 +8,8 @@ interface HeaderProps {
   handleCount: number;
   isLoading: boolean;
   onRefresh: () => void;
+  isAddressSearch?: boolean;
+  addressHandleCount?: number;
 }
 
 export default function Header({
@@ -16,6 +18,8 @@ export default function Header({
   handleCount,
   isLoading,
   onRefresh,
+  isAddressSearch,
+  addressHandleCount,
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-xl">
@@ -41,9 +45,17 @@ export default function Header({
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search by handle ID..."
+            placeholder="Search by handle ID or address..."
             className="glow-ring h-8 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 pl-9 pr-3 text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] backdrop-blur-md outline-none transition-all duration-200 focus:border-[var(--color-accent-dim)] font-[family-name:var(--font-mono)]"
           />
+          {isAddressSearch && (
+            <div className="absolute -bottom-6 left-0 right-0 flex items-center gap-1.5 px-3">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />
+              <span className="text-[10px] text-[var(--color-text-muted)]">
+                Showing {addressHandleCount ?? 0} handles for address
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
