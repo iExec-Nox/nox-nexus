@@ -98,7 +98,6 @@ export function useHandleData(timeframeHours: number | null) {
 export function useHandleFiltering(
   browseNodes: GraphNode[],
   browseEdges: GraphEdge[],
-  _handles: Handle[],
   searchQuery: string,
   selectedOperators: string[],
 ) {
@@ -106,6 +105,10 @@ export function useHandleFiltering(
   const [txFilterIds, setTxFilterIds] = useState<Set<string> | null>(null);
   const [chainHandles, setChainHandles] = useState<Handle[] | null>(null);
   const [isChainLoading, setIsChainLoading] = useState(false);
+
+  // Ref so the effect only re-runs on searchQuery change, not browseNodes
+  const browseNodesRef = useRef(browseNodes);
+  browseNodesRef.current = browseNodes;
 
   // Single effect: detect search type, fetch chain from subgraph
   useEffect(() => {
@@ -154,16 +157,17 @@ export function useHandleFiltering(
             if (!cancelled) setChainHandles(chain);
           }
         } else {
-          // Partial handle search: match against loaded browse nodes
+          // Partial handle search: match against loaded browse nodes (via ref)
           setAddressFilterIds(null);
           setTxFilterIds(null);
+          const currentNodes = browseNodesRef.current;
           const qLower = q.toLowerCase();
-          const matches = browseNodes.filter((n) => n.id.toLowerCase().includes(qLower));
+          const matches = currentNodes.filter((n) => n.id.toLowerCase().includes(qLower));
           let seedId: string | null = null;
           if (matches.length === 1) {
             seedId = matches[0].id;
           } else {
-            const exact = browseNodes.find((n) => n.id.toLowerCase() === qLower);
+            const exact = currentNodes.find((n) => n.id.toLowerCase() === qLower);
             if (exact) seedId = exact.id;
           }
           if (!seedId) { setChainHandles(null); return; }
@@ -185,7 +189,7 @@ export function useHandleFiltering(
 
     const timer = setTimeout(doSearch, 500);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [searchQuery, browseNodes]);
+  }, [searchQuery]);
 
   // Build graph from chain-fetched handles
   const chainGraph = useMemo(() => {

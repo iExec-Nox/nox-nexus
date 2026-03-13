@@ -79,7 +79,6 @@ function Dashboard() {
       params.delete("timeframe");
     }
     router.replace(`/dashboard?${params.toString()}`, { scroll: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, timeframeHours, router]);
 
   const {
@@ -102,7 +101,7 @@ function Dashboard() {
     focusNodeId,
     isChainLoading,
     isSearchActive,
-  } = useHandleFiltering(nodes, edges, handles, searchQuery, selectedOperators);
+  } = useHandleFiltering(nodes, edges, searchQuery, selectedOperators);
 
   const {
     selectedHandle,

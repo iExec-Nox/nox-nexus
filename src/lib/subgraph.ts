@@ -15,6 +15,7 @@ const HANDLES_QUERY = gql`
       isPubliclyDecryptable
       plaintext
       operator
+      blockTimestamp
       transactionHash
       parentHandles {
         id
@@ -35,6 +36,7 @@ const HANDLE_BY_ID_QUERY = gql`
       isPubliclyDecryptable
       plaintext
       operator
+      blockTimestamp
       transactionHash
       parentHandles {
         id
@@ -57,17 +59,28 @@ const HANDLE_BY_ID_QUERY = gql`
   }
 `;
 
-const RECENT_HANDLE_IDS_QUERY = gql`
-  query FetchRecentHandleIds($timestampGte: BigInt!, $first: Int!, $skip: Int!) {
-    handleRoles(
+const HANDLES_SINCE_QUERY = gql`
+  query FetchHandlesSince($timestampGte: BigInt!, $first: Int!, $skip: Int!) {
+    handles(
       first: $first
       skip: $skip
       orderBy: blockTimestamp
       orderDirection: desc
       where: { blockTimestamp_gte: $timestampGte }
     ) {
-      handle {
+      id
+      isPubliclyDecryptable
+      plaintext
+      operator
+      blockTimestamp
+      transactionHash
+      parentHandles {
         id
+        operator
+      }
+      childHandles {
+        id
+        operator
       }
     }
   }
@@ -80,6 +93,7 @@ const HANDLES_BY_IDS_QUERY = gql`
       isPubliclyDecryptable
       plaintext
       operator
+      blockTimestamp
       transactionHash
       parentHandles {
         id
@@ -114,6 +128,7 @@ const HANDLES_BY_TX_HASH_QUERY = gql`
       isPubliclyDecryptable
       plaintext
       operator
+      blockTimestamp
       transactionHash
       parentHandles {
         id
@@ -184,28 +199,22 @@ export async function fetchHandlesByIds(ids: string[]): Promise<Handle[]> {
 }
 
 export async function fetchHandlesSince(sinceTimestamp: number): Promise<Handle[]> {
-  const handleIdSet = new Set<string>();
+  const allHandles: Handle[] = [];
   let skip = 0;
 
   while (true) {
-    const data = await client.request<{
-      handleRoles: { handle: { id: string } }[];
-    }>(RECENT_HANDLE_IDS_QUERY, {
+    const data = await client.request<SubgraphHandlesResponse>(HANDLES_SINCE_QUERY, {
       timestampGte: sinceTimestamp.toString(),
       first: PAGE_SIZE,
       skip,
     });
 
-    for (const role of data.handleRoles) {
-      handleIdSet.add(role.handle.id);
-    }
-
-    if (data.handleRoles.length < PAGE_SIZE) break;
+    allHandles.push(...data.handles);
+    if (data.handles.length < PAGE_SIZE) break;
     skip += PAGE_SIZE;
   }
 
-  if (handleIdSet.size === 0) return [];
-  return fetchHandlesByIds(Array.from(handleIdSet));
+  return allHandles;
 }
 
 export async function fetchHandlesByTxHash(txHash: string): Promise<Handle[]> {

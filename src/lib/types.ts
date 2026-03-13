@@ -8,6 +8,7 @@ export interface Handle {
   isPubliclyDecryptable: boolean;
   plaintext: string | null;
   operator: string;
+  blockTimestamp: string | null;
   parentHandles: Handle[];
   childHandles: Handle[];
   roles: HandleRole[];
