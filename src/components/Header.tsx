@@ -24,6 +24,7 @@ interface HeaderProps {
   txHandleCount?: number;
   timeframeHours: number | null;
   onTimeframeChange: (hours: number | null) => void;
+  isSearchActive?: boolean;
 }
 
 export default function Header({
@@ -38,6 +39,7 @@ export default function Header({
   txHandleCount,
   timeframeHours,
   onTimeframeChange,
+  isSearchActive,
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-xl">
@@ -93,7 +95,10 @@ export default function Header({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-0.5">
+          <div
+            className={`flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-0.5 transition-opacity duration-200 ${isSearchActive ? "opacity-35 pointer-events-none" : ""}`}
+            title={isSearchActive ? "Timeframe disabled during search" : undefined}
+          >
             <Clock className="ml-1.5 h-3 w-3 text-[var(--color-text-muted)]" />
             {TIMEFRAME_OPTIONS.map((opt) => (
               <button

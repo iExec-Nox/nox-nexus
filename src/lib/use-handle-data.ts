@@ -5,6 +5,8 @@ import {
   fetchHandlesSince,
   fetchHandleById,
   fetchHandleIdsByAccount,
+  fetchHandlesByTxHash,
+  fetchHandleChain,
 } from "@/lib/subgraph";
 import { buildGraph } from "@/lib/graph-adapter";
 import {
@@ -94,58 +96,115 @@ export function useHandleData(timeframeHours: number | null) {
 }
 
 export function useHandleFiltering(
-  nodes: GraphNode[],
-  edges: GraphEdge[],
-  handles: Handle[],
+  browseNodes: GraphNode[],
+  browseEdges: GraphEdge[],
+  _handles: Handle[],
   searchQuery: string,
   selectedOperators: string[],
 ) {
   const [addressFilterIds, setAddressFilterIds] = useState<Set<string> | null>(null);
   const [txFilterIds, setTxFilterIds] = useState<Set<string> | null>(null);
+  const [chainHandles, setChainHandles] = useState<Handle[] | null>(null);
+  const [isChainLoading, setIsChainLoading] = useState(false);
 
+  // Single effect: detect search type, fetch chain from subgraph
   useEffect(() => {
     const q = searchQuery.trim();
-    if (!isEthAddress(q)) {
-      setAddressFilterIds(null);
-      return;
-    }
-    let cancelled = false;
-    fetchHandleIdsByAccount(q)
-      .then((ids) => { if (!cancelled) setAddressFilterIds(new Set(ids)); })
-      .catch(() => { if (!cancelled) setAddressFilterIds(new Set()); });
-    return () => { cancelled = true; };
-  }, [searchQuery]);
 
-  useEffect(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!isTxHash(q)) {
+    if (!q || q.length < 6) {
+      setChainHandles(null);
+      setAddressFilterIds(null);
       setTxFilterIds(null);
+      setIsChainLoading(false);
       return;
     }
-    // If the query matches an existing handle ID, don't treat it as a tx hash
-    // (handle IDs and tx hashes have the same format: 0x + 64 hex chars)
-    const isKnownHandle = handles.some((h) => h.id.toLowerCase() === q);
-    if (isKnownHandle) {
-      setTxFilterIds(null);
-      return;
+
+    let cancelled = false;
+
+    const doSearch = async () => {
+      setIsChainLoading(true);
+      try {
+        if (isEthAddress(q)) {
+          // Address search: fetch account handle IDs → expand chain
+          setTxFilterIds(null);
+          const ids = await fetchHandleIdsByAccount(q);
+          if (cancelled) return;
+          setAddressFilterIds(new Set(ids));
+          if (ids.length === 0) { setChainHandles([]); return; }
+          const chain = await fetchHandleChain(ids);
+          if (!cancelled) setChainHandles(chain);
+        } else if (isTxHash(q)) {
+          // 0x + 64 hex: could be handle ID or tx hash
+          setAddressFilterIds(null);
+          const handle = await fetchHandleById(q);
+          if (cancelled) return;
+          if (handle) {
+            // It's a known handle ID
+            setTxFilterIds(null);
+            const chain = await fetchHandleChain([handle.id]);
+            if (!cancelled) setChainHandles(chain);
+          } else {
+            // Not a handle, treat as tx hash
+            const txHandles = await fetchHandlesByTxHash(q);
+            if (cancelled) return;
+            const ids = txHandles.map((h) => h.id);
+            setTxFilterIds(new Set(ids));
+            if (ids.length === 0) { setChainHandles([]); return; }
+            const chain = await fetchHandleChain(ids);
+            if (!cancelled) setChainHandles(chain);
+          }
+        } else {
+          // Partial handle search: match against loaded browse nodes
+          setAddressFilterIds(null);
+          setTxFilterIds(null);
+          const qLower = q.toLowerCase();
+          const matches = browseNodes.filter((n) => n.id.toLowerCase().includes(qLower));
+          let seedId: string | null = null;
+          if (matches.length === 1) {
+            seedId = matches[0].id;
+          } else {
+            const exact = browseNodes.find((n) => n.id.toLowerCase() === qLower);
+            if (exact) seedId = exact.id;
+          }
+          if (!seedId) { setChainHandles(null); return; }
+          const chain = await fetchHandleChain([seedId]);
+          if (!cancelled) setChainHandles(chain);
+        }
+      } catch {
+        if (!cancelled) setChainHandles(null);
+      } finally {
+        if (!cancelled) setIsChainLoading(false);
+      }
+    };
+
+    // Immediate for exact matches (address/tx/handle), debounce for partial
+    if (isEthAddress(q) || isTxHash(q)) {
+      doSearch();
+      return () => { cancelled = true; };
     }
-    const ids = new Set(
-      handles.filter((h) => h.transactionHash?.toLowerCase() === q).map((h) => h.id)
-    );
-    setTxFilterIds(ids);
-  }, [searchQuery, handles]);
+
+    const timer = setTimeout(doSearch, 500);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [searchQuery, browseNodes]);
+
+  // Build graph from chain-fetched handles
+  const chainGraph = useMemo(() => {
+    if (!chainHandles) return null;
+    return buildGraph(chainHandles);
+  }, [chainHandles]);
+
+  // When search is active, use chain data; otherwise use browse data
+  const activeNodes = chainGraph ? chainGraph.nodes : browseNodes;
+  const activeEdges = chainGraph ? chainGraph.edges : browseEdges;
 
   const prevFilteredNodeIdsRef = useRef<string[]>([]);
   const prevFilteredNodesRef = useRef<GraphNode[]>([]);
   const prevFilteredEdgesRef = useRef<GraphEdge[]>([]);
 
   const filteredNodes = useMemo(() => {
-    const result = nodes.filter((n) => {
-      if (!selectedOperators.includes(n.operator)) return false;
-      if (addressFilterIds !== null && !addressFilterIds.has(n.id)) return false;
-      if (txFilterIds !== null && !txFilterIds.has(n.id)) return false;
-      return true;
-    });
+    const result = activeNodes.filter((n) =>
+      selectedOperators.includes(n.operator)
+    );
 
     const ids = result.map((n) => n.id);
     const prev = prevFilteredNodeIdsRef.current;
@@ -155,7 +214,7 @@ export function useHandleFiltering(
     prevFilteredNodeIdsRef.current = ids;
     prevFilteredNodesRef.current = result;
     return result;
-  }, [nodes, selectedOperators, addressFilterIds, txFilterIds]);
+  }, [activeNodes, selectedOperators]);
 
   const filteredNodeIds = useMemo(
     () => new Set(filteredNodes.map((n) => n.id)),
@@ -163,7 +222,7 @@ export function useHandleFiltering(
   );
 
   const filteredEdges = useMemo(() => {
-    const result = edges.filter(
+    const result = activeEdges.filter(
       (e) => filteredNodeIds.has(e.source) && filteredNodeIds.has(e.target)
     );
 
@@ -173,7 +232,7 @@ export function useHandleFiltering(
     }
     prevFilteredEdgesRef.current = result;
     return result;
-  }, [edges, filteredNodeIds]);
+  }, [activeEdges, filteredNodeIds]);
 
   const focusNodeId = useMemo(() => {
     if (!searchQuery || searchQuery.length < 6) return null;
@@ -185,12 +244,16 @@ export function useHandleFiltering(
     return null;
   }, [searchQuery, filteredNodes]);
 
+  const isSearchActive = chainGraph !== null;
+
   return {
     filteredNodes,
     filteredEdges,
     addressFilterIds,
     txFilterIds,
     focusNodeId,
+    isChainLoading,
+    isSearchActive,
   };
 }
 

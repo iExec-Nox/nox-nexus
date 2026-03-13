@@ -100,6 +100,8 @@ function Dashboard() {
     addressFilterIds,
     txFilterIds,
     focusNodeId,
+    isChainLoading,
+    isSearchActive,
   } = useHandleFiltering(nodes, edges, handles, searchQuery, selectedOperators);
 
   const {
@@ -161,6 +163,7 @@ function Dashboard() {
         txHandleCount={txFilterIds?.size}
         timeframeHours={timeframeHours}
         onTimeframeChange={setTimeframeHours}
+        isSearchActive={isSearchActive}
       />
 
       <div className="relative flex flex-1 overflow-hidden">
@@ -212,6 +215,7 @@ function Dashboard() {
       </div>
 
       {isLoading && <LoadingOverlay message="Loading subgraph data..." />}
+      {isChainLoading && <LoadingOverlay message="Loading handle chain..." />}
     </div>
   );
 }

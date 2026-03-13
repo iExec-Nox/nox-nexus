@@ -246,15 +246,18 @@ export default function HandleDetailPanel({
               {handle.transactionHash && (
                 <div>
                   <SectionLabel>Transaction</SectionLabel>
-                  <a
-                    href={`https://sepolia.arbiscan.io/tx/${handle.transactionHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-surface)] px-2 py-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-accent)] transition-colors duration-150 hover:bg-[var(--color-hover)]"
-                  >
-                    {truncateHex(handle.transactionHash)}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                  <div className="inline-flex items-center gap-1">
+                    <a
+                      href={`https://sepolia.arbiscan.io/tx/${handle.transactionHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-surface)] px-2 py-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-accent)] transition-colors duration-150 hover:bg-[var(--color-hover)]"
+                    >
+                      {truncateHex(handle.transactionHash)}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <CopyIconButton value={handle.transactionHash} />
+                  </div>
                 </div>
               )}
 
