@@ -54,6 +54,7 @@ function Dashboard() {
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("force");
   const [timeframeHours, setTimeframeHours] = useState<number | null>(parsedTimeframe);
   const [highlightUnresolved, setHighlightUnresolved] = useState(false);
+  const [txOnlyMode, setTxOnlyMode] = useState(true);
 
   // Sync search query and timeframe to URL
   // Note: searchParams is intentionally excluded from deps to avoid an
@@ -101,7 +102,7 @@ function Dashboard() {
     focusNodeId,
     isChainLoading,
     isSearchActive,
-  } = useHandleFiltering(nodes, edges, searchQuery, selectedOperators);
+  } = useHandleFiltering(nodes, edges, searchQuery, selectedOperators, txOnlyMode);
 
   const {
     selectedHandle,
@@ -117,6 +118,9 @@ function Dashboard() {
     const q = searchQuery.trim();
     if (isEthAddress(q) || isTxHash(q)) {
       clearSelection();
+    }
+    if (!isTxHash(q)) {
+      setTxOnlyMode(true);
     }
   }, [searchQuery, clearSelection]);
 
@@ -141,6 +145,14 @@ function Dashboard() {
     setSelectedOperators([]);
   }, []);
 
+  const handleReset = useCallback(() => {
+    setSearchQuery("");
+    setSelectedOperators([...ALL_OPERATORS]);
+    setTimeframeHours(48);
+    setTxOnlyMode(true);
+    clearSelection();
+  }, [clearSelection]);
+
   // When search focuses on a node, also select it
   useEffect(() => {
     if (focusNodeId) {
@@ -153,6 +165,7 @@ function Dashboard() {
       <Header
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onReset={handleReset}
         handleCount={handles.length}
         isLoading={isLoading}
         onRefresh={loadHandles}
@@ -160,6 +173,8 @@ function Dashboard() {
         addressHandleCount={addressFilterIds?.size}
         isTxSearch={txFilterIds !== null}
         txHandleCount={txFilterIds?.size}
+        txOnlyMode={txOnlyMode}
+        onTxOnlyModeChange={setTxOnlyMode}
         timeframeHours={timeframeHours}
         onTimeframeChange={setTimeframeHours}
         isSearchActive={isSearchActive}

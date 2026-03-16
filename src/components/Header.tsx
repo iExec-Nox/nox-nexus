@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Search, RefreshCw, Hexagon, Clock, X } from "lucide-react";
 
 const TIMEFRAME_OPTIONS: { value: number | null; label: string }[] = [
@@ -15,6 +16,7 @@ const TIMEFRAME_OPTIONS: { value: number | null; label: string }[] = [
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  onReset?: () => void;
   handleCount: number;
   isLoading: boolean;
   onRefresh: () => void;
@@ -22,6 +24,8 @@ interface HeaderProps {
   addressHandleCount?: number;
   isTxSearch?: boolean;
   txHandleCount?: number;
+  txOnlyMode?: boolean;
+  onTxOnlyModeChange?: (v: boolean) => void;
   timeframeHours: number | null;
   onTimeframeChange: (hours: number | null) => void;
   isSearchActive?: boolean;
@@ -30,6 +34,7 @@ interface HeaderProps {
 export default function Header({
   searchQuery,
   onSearchChange,
+  onReset,
   handleCount,
   isLoading,
   onRefresh,
@@ -37,6 +42,8 @@ export default function Header({
   addressHandleCount,
   isTxSearch,
   txHandleCount,
+  txOnlyMode,
+  onTxOnlyModeChange,
   timeframeHours,
   onTimeframeChange,
   isSearchActive,
@@ -44,7 +51,7 @@ export default function Header({
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-xl">
       <div className="flex h-14 items-center justify-between px-5">
-        <div className="flex items-center gap-3">
+        <Link href="/dashboard" onClick={onReset} className="flex items-center gap-3 group">
           <div className="logo-glow">
             <Hexagon
               className="h-6 w-6 text-[var(--color-accent)]"
@@ -57,7 +64,7 @@ export default function Header({
           <span className="ml-1 rounded-full bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-medium text-[var(--color-accent)]">
             EXPLORER
           </span>
-        </div>
+        </Link>
 
         <div className="relative w-full max-w-md mx-8">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-text-muted)]" />
@@ -77,7 +84,7 @@ export default function Header({
             </button>
           )}
           {isAddressSearch && (
-            <div className="absolute -bottom-6 left-0 right-0 flex items-center gap-1.5 px-3">
+            <div className="absolute -bottom-8 left-0 right-0 flex items-center gap-1.5 px-3">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />
               <span className="text-[10px] text-[var(--color-text-muted)]">
                 Showing {addressHandleCount ?? 0} handles for address
@@ -85,7 +92,7 @@ export default function Header({
             </div>
           )}
           {isTxSearch && (
-            <div className="absolute -bottom-6 left-0 right-0 flex items-center gap-1.5 px-3">
+            <div className="absolute -bottom-8 left-0 right-0 flex items-center gap-1.5 px-3">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />
               <span className="text-[10px] text-[var(--color-text-muted)]">
                 Showing {txHandleCount ?? 0} handles for transaction
@@ -95,6 +102,30 @@ export default function Header({
         </div>
 
         <div className="flex items-center gap-3">
+          {isTxSearch && (
+            <div className="flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-0.5">
+              <button
+                onClick={() => onTxOnlyModeChange?.(false)}
+                className={`rounded-md px-2 py-1 text-[10px] font-medium transition-all duration-150 ${
+                  !txOnlyMode
+                    ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent"
+                }`}
+              >
+                All linked
+              </button>
+              <button
+                onClick={() => onTxOnlyModeChange?.(true)}
+                className={`rounded-md px-2 py-1 text-[10px] font-medium transition-all duration-150 ${
+                  txOnlyMode
+                    ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent"
+                }`}
+              >
+                Tx
+              </button>
+            </div>
+          )}
           <div
             className={`flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-0.5 transition-opacity duration-200 ${isSearchActive ? "opacity-35 pointer-events-none" : ""}`}
             title={isSearchActive ? "Timeframe disabled during search" : undefined}

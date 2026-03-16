@@ -100,6 +100,7 @@ export function useHandleFiltering(
   browseEdges: GraphEdge[],
   searchQuery: string,
   selectedOperators: string[],
+  txOnlyMode: boolean,
 ) {
   const [addressFilterIds, setAddressFilterIds] = useState<Set<string> | null>(null);
   const [txFilterIds, setTxFilterIds] = useState<Set<string> | null>(null);
@@ -153,8 +154,12 @@ export function useHandleFiltering(
             const ids = txHandles.map((h) => h.id);
             setTxFilterIds(new Set(ids));
             if (ids.length === 0) { setChainHandles([]); return; }
-            const chain = await fetchHandleChain(ids);
-            if (!cancelled) setChainHandles(chain);
+            if (txOnlyMode) {
+              setChainHandles(txHandles);
+            } else {
+              const chain = await fetchHandleChain(ids);
+              if (!cancelled) setChainHandles(chain);
+            }
           }
         } else {
           // Partial handle search: match against loaded browse nodes (via ref)
@@ -189,7 +194,7 @@ export function useHandleFiltering(
 
     const timer = setTimeout(doSearch, 500);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [searchQuery]);
+  }, [searchQuery, txOnlyMode]);
 
   // Build graph from chain-fetched handles
   const chainGraph = useMemo(() => {
