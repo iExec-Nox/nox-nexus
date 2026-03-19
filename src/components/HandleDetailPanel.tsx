@@ -100,6 +100,8 @@ export default function HandleDetailPanel({
 }: HandleDetailPanelProps) {
   const isOpen = handle !== null;
 
+  const info = handle ? decodeHandle(handle.id) : null;
+
   return (
     <div
       className={`absolute right-0 top-0 z-40 flex h-full w-[380px] flex-col border-l border-[var(--color-border)] bg-[var(--color-deep)]/95 backdrop-blur-xl transition-transform duration-300 ease-in-out ${
@@ -131,7 +133,6 @@ export default function HandleDetailPanel({
               </div>
 
               {(() => {
-                const info = decodeHandle(handle.id);
                 if (!info) return null;
                 return (
                   <div className="flex gap-3">
@@ -141,6 +142,12 @@ export default function HandleDetailPanel({
                         {info.solidityType}
                       </span>
                     </div>
+                    <div>
+                      <SectionLabel>Unique</SectionLabel>
+                      <span className="inline-flex items-center rounded-md bg-orange-500/10 px-2 py-1 font-[family-name:var(--font-mono)] text-xs font-medium text-orange-400 border border-orange-500/20">
+                        {info.unique ? "Unique" : "Shared"}
+                      </span>
+                    </div>{" "}
                     <div>
                       <SectionLabel>Chain ID</SectionLabel>
                       <span className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-2 py-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-text-secondary)]">
@@ -170,7 +177,10 @@ export default function HandleDetailPanel({
                   >
                     <span
                       className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: OPERATOR_COLORS[handle.operator] ?? "#64748b" }}
+                      style={{
+                        backgroundColor:
+                          OPERATOR_COLORS[handle.operator] ?? "#64748b",
+                      }}
                     />
                     {OPERATOR_LABELS[handle.operator] ?? handle.operator}
                   </span>
@@ -188,7 +198,9 @@ export default function HandleDetailPanel({
                   >
                     <span
                       className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: OPERATOR_COLORS["EncryptedInput"] }}
+                      style={{
+                        backgroundColor: OPERATOR_COLORS["EncryptedInput"],
+                      }}
                     />
                     Encrypted Input from Handle Gateway
                   </span>
@@ -221,7 +233,7 @@ export default function HandleDetailPanel({
 
               <div>
                 <SectionLabel>Publicly Decryptable</SectionLabel>
-                {handle.isPubliclyDecryptable ? (
+                {handle.isPubliclyDecryptable || info?.unique === false ? (
                   <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400">
                     <ShieldCheck className="h-3.5 w-3.5" />
                     Yes
@@ -379,7 +391,9 @@ export default function HandleDetailPanel({
                             <td className="px-2 py-1.5">
                               <div className="flex items-center gap-1">
                                 <button
-                                  onClick={() => onAddressSearch(role.grantedBy)}
+                                  onClick={() =>
+                                    onAddressSearch(role.grantedBy)
+                                  }
                                   className="font-[family-name:var(--font-mono)] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-accent)] cursor-pointer"
                                   title="Search handles for this address"
                                 >
