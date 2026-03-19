@@ -1,10 +1,10 @@
-import { GraphQLClient, gql } from "graphql-request";
-import { SUBGRAPH_URL } from "./constants";
+import { GraphQLClient, gql } from 'graphql-request';
+import { SUBGRAPH_URL } from './constants';
 import type {
   Handle,
   SubgraphHandleResponse,
   SubgraphHandlesResponse,
-} from "./types";
+} from './types';
 
 const client = new GraphQLClient(SUBGRAPH_URL);
 
@@ -183,11 +183,14 @@ export async function fetchHandlesByIds(ids: string[]): Promise<Handle[]> {
     let batchSkip = 0;
 
     while (true) {
-      const data = await client.request<SubgraphHandlesResponse>(HANDLES_BY_IDS_QUERY, {
-        ids: batchIds,
-        first: PAGE_SIZE,
-        skip: batchSkip,
-      });
+      const data = await client.request<SubgraphHandlesResponse>(
+        HANDLES_BY_IDS_QUERY,
+        {
+          ids: batchIds,
+          first: PAGE_SIZE,
+          skip: batchSkip,
+        }
+      );
 
       allHandles.push(...data.handles);
       if (data.handles.length < PAGE_SIZE) break;
@@ -198,16 +201,21 @@ export async function fetchHandlesByIds(ids: string[]): Promise<Handle[]> {
   return allHandles;
 }
 
-export async function fetchHandlesSince(sinceTimestamp: number): Promise<Handle[]> {
+export async function fetchHandlesSince(
+  sinceTimestamp: number
+): Promise<Handle[]> {
   const allHandles: Handle[] = [];
   let skip = 0;
 
   while (true) {
-    const data = await client.request<SubgraphHandlesResponse>(HANDLES_SINCE_QUERY, {
-      timestampGte: sinceTimestamp.toString(),
-      first: PAGE_SIZE,
-      skip,
-    });
+    const data = await client.request<SubgraphHandlesResponse>(
+      HANDLES_SINCE_QUERY,
+      {
+        timestampGte: sinceTimestamp.toString(),
+        first: PAGE_SIZE,
+        skip,
+      }
+    );
 
     allHandles.push(...data.handles);
     if (data.handles.length < PAGE_SIZE) break;
@@ -222,11 +230,14 @@ export async function fetchHandlesByTxHash(txHash: string): Promise<Handle[]> {
   let skip = 0;
 
   while (true) {
-    const data = await client.request<SubgraphHandlesResponse>(HANDLES_BY_TX_HASH_QUERY, {
-      txHash: txHash.toLowerCase(),
-      first: PAGE_SIZE,
-      skip,
-    });
+    const data = await client.request<SubgraphHandlesResponse>(
+      HANDLES_BY_TX_HASH_QUERY,
+      {
+        txHash: txHash.toLowerCase(),
+        first: PAGE_SIZE,
+        skip,
+      }
+    );
 
     allHandles.push(...data.handles);
     if (data.handles.length < PAGE_SIZE) break;
@@ -264,9 +275,7 @@ export async function fetchHandleChain(seedIds: string[]): Promise<Handle[]> {
   return Array.from(fetched.values());
 }
 
-export async function fetchHandleById(
-  id: string
-): Promise<Handle | null> {
+export async function fetchHandleById(id: string): Promise<Handle | null> {
   const data = await client.request<SubgraphHandleResponse>(
     HANDLE_BY_ID_QUERY,
     { id }

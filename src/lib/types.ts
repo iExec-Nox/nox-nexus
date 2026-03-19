@@ -1,6 +1,6 @@
 export enum Role {
-  ADMIN = "ADMIN",
-  VIEWER = "VIEWER",
+  ADMIN = 'ADMIN',
+  VIEWER = 'VIEWER',
 }
 
 export interface Handle {

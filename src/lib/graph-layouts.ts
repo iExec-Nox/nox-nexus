@@ -1,15 +1,15 @@
-import Graph from "graphology";
-import forceAtlas2 from "graphology-layout-forceatlas2";
-import noverlap from "graphology-layout-noverlap";
-import { connectedComponents } from "graphology-components";
+import Graph from 'graphology';
+import forceAtlas2 from 'graphology-layout-forceatlas2';
+import noverlap from 'graphology-layout-noverlap';
+import { connectedComponents } from 'graphology-components';
 
-export type LayoutMode = "force" | "circular" | "grid" | "radial";
+export type LayoutMode = 'force' | 'circular' | 'grid' | 'radial';
 
 export const LAYOUT_OPTIONS: { value: LayoutMode; label: string }[] = [
-  { value: "force", label: "Force-directed" },
-  { value: "circular", label: "Circular" },
-  { value: "grid", label: "Grid" },
-  { value: "radial", label: "Radial" },
+  { value: 'force', label: 'Force-directed' },
+  { value: 'circular', label: 'Circular' },
+  { value: 'grid', label: 'Grid' },
+  { value: 'radial', label: 'Radial' },
 ];
 
 type PositionMap = Map<string, { x: number; y: number }>;
@@ -34,24 +34,28 @@ export function computeLayout(graph: Graph, mode: LayoutMode): PositionMap {
 
     let compPositions: PositionMap;
     switch (mode) {
-      case "circular":
+      case 'circular':
         compPositions = layoutCircular(graph, componentNodes);
         break;
-      case "grid":
+      case 'grid':
         compPositions = layoutGrid(graph, componentNodes);
         break;
-      case "radial":
+      case 'radial':
         compPositions = layoutRadial(graph, componentNodes);
         break;
-      case "force":
+      case 'force':
       default:
         compPositions = layoutForce(graph, componentNodes);
         break;
     }
 
     // Center the component at origin
-    let cx = 0, cy = 0;
-    compPositions.forEach((pos) => { cx += pos.x; cy += pos.y; });
+    let cx = 0,
+      cy = 0;
+    compPositions.forEach((pos) => {
+      cx += pos.x;
+      cy += pos.y;
+    });
     cx /= compPositions.size;
     cy /= compPositions.size;
 
@@ -120,16 +124,16 @@ function layoutForce(graph: Graph, componentNodes: string[]): PositionMap {
   // Scatter initial positions
   const initSpread = Math.sqrt(nodeCount) * 50;
   componentNodes.forEach((nodeId) => {
-    subgraph.setNodeAttribute(nodeId, "x", (Math.random() - 0.5) * initSpread);
-    subgraph.setNodeAttribute(nodeId, "y", (Math.random() - 0.5) * initSpread);
+    subgraph.setNodeAttribute(nodeId, 'x', (Math.random() - 0.5) * initSpread);
+    subgraph.setNodeAttribute(nodeId, 'y', (Math.random() - 0.5) * initSpread);
   });
 
   // Temporarily inflate node sizes to boost repulsion
   const originalSizes = new Map<string, number>();
   subgraph.forEachNode((node) => {
-    const s = subgraph.getNodeAttribute(node, "size") as number;
+    const s = subgraph.getNodeAttribute(node, 'size') as number;
     originalSizes.set(node, s);
-    subgraph.setNodeAttribute(node, "size", s * 30);
+    subgraph.setNodeAttribute(node, 'size', s * 30);
   });
 
   const inferred = forceAtlas2.inferSettings(subgraph);
@@ -153,25 +157,26 @@ function layoutForce(graph: Graph, componentNodes: string[]): PositionMap {
 
   // Restore original sizes
   subgraph.forEachNode((node) => {
-    subgraph.setNodeAttribute(node, "size", originalSizes.get(node)!);
+    subgraph.setNodeAttribute(node, 'size', originalSizes.get(node)!);
   });
 
   // Scale all positions outward from center to create spacing
   if (nodeCount > 1) {
-    let cx = 0, cy = 0;
+    let cx = 0,
+      cy = 0;
     subgraph.forEachNode((node) => {
-      cx += subgraph.getNodeAttribute(node, "x") as number;
-      cy += subgraph.getNodeAttribute(node, "y") as number;
+      cx += subgraph.getNodeAttribute(node, 'x') as number;
+      cy += subgraph.getNodeAttribute(node, 'y') as number;
     });
     cx /= nodeCount;
     cy /= nodeCount;
 
     const scaleFactor = nodeCount < 50 ? 8 : nodeCount < 200 ? 14 : 20;
     subgraph.forEachNode((node) => {
-      const x = subgraph.getNodeAttribute(node, "x") as number;
-      const y = subgraph.getNodeAttribute(node, "y") as number;
-      subgraph.setNodeAttribute(node, "x", cx + (x - cx) * scaleFactor);
-      subgraph.setNodeAttribute(node, "y", cy + (y - cy) * scaleFactor);
+      const x = subgraph.getNodeAttribute(node, 'x') as number;
+      const y = subgraph.getNodeAttribute(node, 'y') as number;
+      subgraph.setNodeAttribute(node, 'x', cx + (x - cx) * scaleFactor);
+      subgraph.setNodeAttribute(node, 'y', cy + (y - cy) * scaleFactor);
     });
   }
 
@@ -184,8 +189,8 @@ function layoutForce(graph: Graph, componentNodes: string[]): PositionMap {
   const positions: PositionMap = new Map();
   for (const nodeId of componentNodes) {
     positions.set(nodeId, {
-      x: subgraph.getNodeAttribute(nodeId, "x") as number,
-      y: subgraph.getNodeAttribute(nodeId, "y") as number,
+      x: subgraph.getNodeAttribute(nodeId, 'x') as number,
+      y: subgraph.getNodeAttribute(nodeId, 'y') as number,
     });
   }
   return positions;

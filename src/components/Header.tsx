@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { Search, RefreshCw, Hexagon, Clock, X } from "lucide-react";
+import Link from 'next/link';
+import { Search, RefreshCw, Hexagon, Clock, X } from 'lucide-react';
 
 const TIMEFRAME_OPTIONS: { value: number | null; label: string }[] = [
-  { value: 1, label: "1h" },
-  { value: 6, label: "6h" },
-  { value: 24, label: "24h" },
-  { value: 48, label: "48h" },
-  { value: 168, label: "7d" },
-  { value: 720, label: "30d" },
-  { value: null, label: "All" },
+  { value: 1, label: '1h' },
+  { value: 6, label: '6h' },
+  { value: 24, label: '24h' },
+  { value: 48, label: '48h' },
+  { value: 168, label: '7d' },
+  { value: 720, label: '30d' },
+  { value: null, label: 'All' },
 ];
 
 interface HeaderProps {
@@ -51,7 +51,11 @@ export default function Header({
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-xl">
       <div className="flex h-14 items-center justify-between px-5">
-        <Link href="/dashboard" onClick={onReset} className="flex items-center gap-3 group">
+        <Link
+          href="/dashboard"
+          onClick={onReset}
+          className="flex items-center gap-3 group"
+        >
           <div className="logo-glow">
             <Hexagon
               className="h-6 w-6 text-[var(--color-accent)]"
@@ -77,7 +81,7 @@ export default function Header({
           />
           {searchQuery && (
             <button
-              onClick={() => onSearchChange("")}
+              onClick={() => onSearchChange('')}
               className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center h-4 w-4 rounded-full text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
             >
               <X className="h-3 w-3" />
@@ -108,8 +112,8 @@ export default function Header({
                 onClick={() => onTxOnlyModeChange?.(false)}
                 className={`rounded-md px-2 py-1 text-[10px] font-medium transition-all duration-150 ${
                   !txOnlyMode
-                    ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30"
-                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent"
+                    ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30'
+                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent'
                 }`}
               >
                 All linked
@@ -118,8 +122,8 @@ export default function Header({
                 onClick={() => onTxOnlyModeChange?.(true)}
                 className={`rounded-md px-2 py-1 text-[10px] font-medium transition-all duration-150 ${
                   txOnlyMode
-                    ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30"
-                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent"
+                    ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30'
+                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent'
                 }`}
               >
                 Tx
@@ -127,8 +131,10 @@ export default function Header({
             </div>
           )}
           <div
-            className={`flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-0.5 transition-opacity duration-200 ${isSearchActive ? "opacity-35 pointer-events-none" : ""}`}
-            title={isSearchActive ? "Timeframe disabled during search" : undefined}
+            className={`flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-0.5 transition-opacity duration-200 ${isSearchActive ? 'opacity-35 pointer-events-none' : ''}`}
+            title={
+              isSearchActive ? 'Timeframe disabled during search' : undefined
+            }
           >
             <Clock className="ml-1.5 h-3 w-3 text-[var(--color-text-muted)]" />
             {TIMEFRAME_OPTIONS.map((opt) => (
@@ -137,8 +143,8 @@ export default function Header({
                 onClick={() => onTimeframeChange(opt.value)}
                 className={`rounded-md px-2 py-1 text-[10px] font-medium transition-all duration-150 ${
                   timeframeHours === opt.value
-                    ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30"
-                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent"
+                    ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30'
+                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent'
                 }`}
               >
                 {opt.label}
@@ -161,7 +167,7 @@ export default function Header({
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] transition-all duration-200 hover:border-[var(--color-accent-dim)] hover:text-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw
-              className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`}
+              className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`}
             />
           </button>
         </div>

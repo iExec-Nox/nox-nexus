@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { Suspense, useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { ALL_OPERATORS } from "@/lib/constants";
-import type { LayoutMode } from "@/lib/graph-layouts";
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { ALL_OPERATORS } from '@/lib/constants';
+import type { LayoutMode } from '@/lib/graph-layouts';
 import {
   useHandleData,
   useHandleFiltering,
   useNodeSelection,
   isEthAddress,
   isTxHash,
-} from "@/lib/use-handle-data";
-import Header from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
-import dynamic from "next/dynamic";
-import GraphStats from "@/components/GraphStats";
+} from '@/lib/use-handle-data';
+import Header from '@/components/Header';
+import Sidebar from '@/components/Sidebar';
+import dynamic from 'next/dynamic';
+import GraphStats from '@/components/GraphStats';
 
-const GraphCanvas = dynamic(() => import("@/components/GraphCanvas"), {
+const GraphCanvas = dynamic(() => import('@/components/GraphCanvas'), {
   ssr: false,
   loading: () => (
     <div className="flex h-full w-full items-center justify-center bg-[var(--color-deep)]">
@@ -26,8 +26,8 @@ const GraphCanvas = dynamic(() => import("@/components/GraphCanvas"), {
     </div>
   ),
 });
-import HandleDetailPanel from "@/components/HandleDetailPanel";
-import LoadingOverlay from "@/components/LoadingOverlay";
+import HandleDetailPanel from '@/components/HandleDetailPanel';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 export default function Home() {
   return (
@@ -40,19 +40,24 @@ export default function Home() {
 function Dashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialSearch = searchParams.get("search") ?? "";
-  const initialTimeframe = searchParams.get("timeframe");
-  const parsedTimeframe = initialTimeframe === "all" ? null
-    : initialTimeframe ? Number(initialTimeframe) || 48
-    : 48;
+  const initialSearch = searchParams.get('search') ?? '';
+  const initialTimeframe = searchParams.get('timeframe');
+  const parsedTimeframe =
+    initialTimeframe === 'all'
+      ? null
+      : initialTimeframe
+        ? Number(initialTimeframe) || 48
+        : 48;
 
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedOperators, setSelectedOperators] = useState<string[]>([
     ...ALL_OPERATORS,
   ]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>("force");
-  const [timeframeHours, setTimeframeHours] = useState<number | null>(parsedTimeframe);
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('force');
+  const [timeframeHours, setTimeframeHours] = useState<number | null>(
+    parsedTimeframe
+  );
   const [highlightUnresolved, setHighlightUnresolved] = useState(false);
   const [txOnlyMode, setTxOnlyMode] = useState(true);
 
@@ -68,16 +73,16 @@ function Dashboard() {
     const params = new URLSearchParams(window.location.search);
     const q = searchQuery.trim();
     if (q) {
-      params.set("search", q);
+      params.set('search', q);
     } else {
-      params.delete("search");
+      params.delete('search');
     }
     if (timeframeHours === null) {
-      params.set("timeframe", "all");
+      params.set('timeframe', 'all');
     } else if (timeframeHours !== 48) {
-      params.set("timeframe", String(timeframeHours));
+      params.set('timeframe', String(timeframeHours));
     } else {
-      params.delete("timeframe");
+      params.delete('timeframe');
     }
     router.replace(`/dashboard?${params.toString()}`, { scroll: false });
   }, [searchQuery, timeframeHours, router]);
@@ -102,7 +107,13 @@ function Dashboard() {
     focusNodeId,
     isChainLoading,
     isSearchActive,
-  } = useHandleFiltering(nodes, edges, searchQuery, selectedOperators, txOnlyMode);
+  } = useHandleFiltering(
+    nodes,
+    edges,
+    searchQuery,
+    selectedOperators,
+    txOnlyMode
+  );
 
   const {
     selectedHandle,
@@ -124,12 +135,15 @@ function Dashboard() {
     }
   }, [searchQuery, clearSelection]);
 
-  const handleNodeClick = useCallback(async (nodeId: string) => {
-    if (!isEthAddress(searchQuery.trim()) && !isTxHash(searchQuery.trim())) {
-      setSearchQuery("");
-    }
-    await selectNode(nodeId);
-  }, [selectNode, searchQuery]);
+  const handleNodeClick = useCallback(
+    async (nodeId: string) => {
+      if (!isEthAddress(searchQuery.trim()) && !isTxHash(searchQuery.trim())) {
+        setSearchQuery('');
+      }
+      await selectNode(nodeId);
+    },
+    [selectNode, searchQuery]
+  );
 
   const handleOperatorToggle = useCallback((op: string) => {
     setSelectedOperators((prev) =>
@@ -146,7 +160,7 @@ function Dashboard() {
   }, []);
 
   const handleReset = useCallback(() => {
-    setSearchQuery("");
+    setSearchQuery('');
     setSelectedOperators([...ALL_OPERATORS]);
     setTimeframeHours(48);
     setTxOnlyMode(true);
@@ -202,12 +216,18 @@ function Dashboard() {
             onNodeClick={handleNodeClick}
             onBackgroundClick={clearSelection}
             selectedNodeId={selectedNodeId}
-            searchQuery={addressFilterIds !== null || txFilterIds !== null ? "" : searchQuery}
+            searchQuery={
+              addressFilterIds !== null || txFilterIds !== null
+                ? ''
+                : searchQuery
+            }
             highlightedOperators={selectedOperators}
             focusNodeId={focusNodeId}
             layoutMode={layoutMode}
             onLayoutChange={setLayoutMode}
-            unresolvedNodeIds={highlightUnresolved ? unresolvedNodeIds : undefined}
+            unresolvedNodeIds={
+              highlightUnresolved ? unresolvedNodeIds : undefined
+            }
           />
 
           <div className="absolute bottom-4 left-4 z-10">

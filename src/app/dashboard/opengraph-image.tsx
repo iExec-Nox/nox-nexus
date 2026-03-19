@@ -1,9 +1,9 @@
-import { ImageResponse } from "next/og";
+import { ImageResponse } from 'next/og';
 
-export const runtime = "edge";
-export const alt = "Nox Nexus - Handle Explorer for Nox Protocol";
+export const runtime = 'edge';
+export const alt = 'Nox Nexus - Handle Explorer for Nox Protocol';
 export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const contentType = 'image/png';
 
 function seededRandom(seed: number) {
   let s = seed;
@@ -17,9 +17,19 @@ export default function OGImage() {
   const rand = seededRandom(42);
 
   const colors = [
-    "#a855f7", "#10b981", "#f59e0b", "#3b82f6", "#ec4899",
-    "#6366f1", "#14b8a6", "#f97316", "#ef4444", "#22c55e",
-    "#38bdf8", "#38bdf8", "#38bdf8",
+    '#a855f7',
+    '#10b981',
+    '#f59e0b',
+    '#3b82f6',
+    '#ec4899',
+    '#6366f1',
+    '#14b8a6',
+    '#f97316',
+    '#ef4444',
+    '#22c55e',
+    '#38bdf8',
+    '#38bdf8',
+    '#38bdf8',
   ];
 
   const clusters = [
@@ -32,7 +42,13 @@ export default function OGImage() {
     { cx: 1050, cy: 300, r: 40, count: 6 },
   ];
 
-  const nodes: { x: number; y: number; s: number; color: string; cluster: number }[] = [];
+  const nodes: {
+    x: number;
+    y: number;
+    s: number;
+    color: string;
+    cluster: number;
+  }[] = [];
 
   for (let ci = 0; ci < clusters.length; ci++) {
     const cluster = clusters[ci];
@@ -50,7 +66,13 @@ export default function OGImage() {
   }
 
   // Build edges between nearby nodes within each cluster
-  const edges: { x1: number; y1: number; x2: number; y2: number; color: string }[] = [];
+  const edges: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    color: string;
+  }[] = [];
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       if (nodes[i].cluster !== nodes[j].cluster) continue;
@@ -71,107 +93,105 @@ export default function OGImage() {
   }
 
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          background: "#14141b",
-          position: "relative",
-        }}
-      >
-        {/* Edges as thin rotated divs */}
-        {edges.map((edge, i) => {
-          const dx = edge.x2 - edge.x1;
-          const dy = edge.y2 - edge.y1;
-          const length = Math.sqrt(dx * dx + dy * dy);
-          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-          const mx = (edge.x1 + edge.x2) / 2;
-          const my = (edge.y1 + edge.y2) / 2;
-          return (
-            <div
-              key={`e${i}`}
-              style={{
-                position: "absolute",
-                left: mx - length / 2,
-                top: my - 0.5,
-                width: length,
-                height: 1,
-                backgroundColor: edge.color,
-                opacity: 0.2,
-                transform: `rotate(${angle}deg)`,
-              }}
-            />
-          );
-        })}
-
-        {/* Nodes as simple colored dots */}
-        {nodes.map((node, i) => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        background: '#14141b',
+        position: 'relative',
+      }}
+    >
+      {/* Edges as thin rotated divs */}
+      {edges.map((edge, i) => {
+        const dx = edge.x2 - edge.x1;
+        const dy = edge.y2 - edge.y1;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        const mx = (edge.x1 + edge.x2) / 2;
+        const my = (edge.y1 + edge.y2) / 2;
+        return (
           <div
-            key={i}
+            key={`e${i}`}
             style={{
-              position: "absolute",
-              left: node.x - node.s / 2,
-              top: node.y - node.s / 2,
-              width: node.s,
-              height: node.s,
-              borderRadius: 999,
-              backgroundColor: node.color,
+              position: 'absolute',
+              left: mx - length / 2,
+              top: my - 0.5,
+              width: length,
+              height: 1,
+              backgroundColor: edge.color,
+              opacity: 0.2,
+              transform: `rotate(${angle}deg)`,
             }}
           />
-        ))}
+        );
+      })}
 
-        {/* Bottom gradient overlay for text readability */}
+      {/* Nodes as simple colored dots */}
+      {nodes.map((node, i) => (
         <div
+          key={i}
           style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 200,
-            display: "flex",
-            background: "linear-gradient(to top, #14141b, transparent)",
+            position: 'absolute',
+            left: node.x - node.s / 2,
+            top: node.y - node.s / 2,
+            width: node.s,
+            height: node.s,
+            borderRadius: 999,
+            backgroundColor: node.color,
           }}
         />
+      ))}
 
-        {/* Title block */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 40,
-            left: 60,
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <span
-              style={{
-                fontSize: 48,
-                fontWeight: 700,
-                color: "#e4e4e8",
-              }}
-            >
-              NOX
-            </span>
-            <span
-              style={{
-                fontSize: 48,
-                fontWeight: 700,
-                color: "#5c73e7",
-                marginLeft: 16,
-              }}
-            >
-              NEXUS
-            </span>
-          </div>
-          <span style={{ fontSize: 20, color: "#8888a0", marginTop: 8 }}>
-            Handle Explorer for Nox Protocol
+      {/* Bottom gradient overlay for text readability */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 200,
+          display: 'flex',
+          background: 'linear-gradient(to top, #14141b, transparent)',
+        }}
+      />
+
+      {/* Title block */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 40,
+          left: 60,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <span
+            style={{
+              fontSize: 48,
+              fontWeight: 700,
+              color: '#e4e4e8',
+            }}
+          >
+            NOX
+          </span>
+          <span
+            style={{
+              fontSize: 48,
+              fontWeight: 700,
+              color: '#5c73e7',
+              marginLeft: 16,
+            }}
+          >
+            NEXUS
           </span>
         </div>
+        <span style={{ fontSize: 20, color: '#8888a0', marginTop: 8 }}>
+          Handle Explorer for Nox Protocol
+        </span>
       </div>
-    ),
+    </div>,
     { ...size }
   );
 }

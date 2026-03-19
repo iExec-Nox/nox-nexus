@@ -1,13 +1,13 @@
-import type { Handle, GraphNode, GraphEdge } from "./types";
+import type { Handle, GraphNode, GraphEdge } from './types';
 import {
   OPERATOR_COLORS,
   NODE_SIZE_BASE,
   NODE_SIZE_PER_CONNECTION,
   NODE_SIZE_MAX,
-} from "./constants";
+} from './constants';
 
 function getOperatorColor(operator: string): string {
-  return OPERATOR_COLORS[operator] ?? OPERATOR_COLORS["Default"] ?? "#64748b";
+  return OPERATOR_COLORS[operator] ?? OPERATOR_COLORS['Default'] ?? '#64748b';
 }
 
 function formatLabel(id: string): string {
@@ -17,7 +17,8 @@ function formatLabel(id: string): string {
 
 function computeNodeSize(connectionCount: number): number {
   // sqrt scale: visually, circle area grows linearly with connections
-  const size = NODE_SIZE_BASE + Math.sqrt(connectionCount) * NODE_SIZE_PER_CONNECTION * 2;
+  const size =
+    NODE_SIZE_BASE + Math.sqrt(connectionCount) * NODE_SIZE_PER_CONNECTION * 2;
   return Math.min(size, NODE_SIZE_MAX);
 }
 
@@ -39,7 +40,7 @@ export function buildGraph(handles: Handle[]): {
   // Second pass: build nodes
   for (const handle of handles) {
     const connectionCount = connectionCounts.get(handle.id) ?? 0;
-    const operator = handle.operator || "EncryptedInput";
+    const operator = handle.operator || 'EncryptedInput';
     const color = getOperatorColor(operator);
 
     const node: GraphNode = {
@@ -72,7 +73,7 @@ export function buildGraph(handles: Handle[]): {
       const sourceNode = nodeMap.get(parent.id);
       const sourceColor = sourceNode
         ? sourceNode.color
-        : getOperatorColor(parent.operator ?? "Default");
+        : getOperatorColor(parent.operator ?? 'Default');
 
       const edge: GraphEdge = {
         id: edgeId,

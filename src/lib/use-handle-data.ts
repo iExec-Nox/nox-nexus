@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import type { Handle, GraphNode, GraphEdge } from "@/lib/types";
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import type { Handle, GraphNode, GraphEdge } from '@/lib/types';
 import {
   fetchAllHandlesPaginated,
   fetchHandlesSince,
@@ -7,13 +7,13 @@ import {
   fetchHandleIdsByAccount,
   fetchHandlesByTxHash,
   fetchHandleChain,
-} from "@/lib/subgraph";
-import { buildGraph } from "@/lib/graph-adapter";
+} from '@/lib/subgraph';
+import { buildGraph } from '@/lib/graph-adapter';
 import {
   fetchHandleStatuses,
   fetchSingleHandleStatus,
   type HandleStatusMap,
-} from "@/lib/gateway";
+} from '@/lib/gateway';
 
 const isEthAddress = (q: string) => /^0x[0-9a-fA-F]{40}$/.test(q.trim());
 const isTxHash = (q: string) => /^0x[0-9a-fA-F]{64}$/.test(q.trim());
@@ -29,14 +29,15 @@ export function useHandleData(timeframeHours: number | null) {
     try {
       let data: Handle[];
       if (timeframeHours !== null) {
-        const sinceTimestamp = Math.floor(Date.now() / 1000) - timeframeHours * 3600;
+        const sinceTimestamp =
+          Math.floor(Date.now() / 1000) - timeframeHours * 3600;
         data = await fetchHandlesSince(sinceTimestamp);
       } else {
         data = await fetchAllHandlesPaginated();
       }
       setHandles(data);
     } catch (err) {
-      console.error("Failed to fetch handles:", err);
+      console.error('Failed to fetch handles:', err);
     } finally {
       setIsLoading(false);
     }
@@ -100,9 +101,11 @@ export function useHandleFiltering(
   browseEdges: GraphEdge[],
   searchQuery: string,
   selectedOperators: string[],
-  txOnlyMode: boolean,
+  txOnlyMode: boolean
 ) {
-  const [addressFilterIds, setAddressFilterIds] = useState<Set<string> | null>(null);
+  const [addressFilterIds, setAddressFilterIds] = useState<Set<string> | null>(
+    null
+  );
   const [txFilterIds, setTxFilterIds] = useState<Set<string> | null>(null);
   const [chainHandles, setChainHandles] = useState<Handle[] | null>(null);
   const [isChainLoading, setIsChainLoading] = useState(false);
@@ -134,7 +137,10 @@ export function useHandleFiltering(
           const ids = await fetchHandleIdsByAccount(q);
           if (cancelled) return;
           setAddressFilterIds(new Set(ids));
-          if (ids.length === 0) { setChainHandles([]); return; }
+          if (ids.length === 0) {
+            setChainHandles([]);
+            return;
+          }
           const chain = await fetchHandleChain(ids);
           if (!cancelled) setChainHandles(chain);
         } else if (isTxHash(q)) {
@@ -153,7 +159,10 @@ export function useHandleFiltering(
             if (cancelled) return;
             const ids = txHandles.map((h) => h.id);
             setTxFilterIds(new Set(ids));
-            if (ids.length === 0) { setChainHandles([]); return; }
+            if (ids.length === 0) {
+              setChainHandles([]);
+              return;
+            }
             if (txOnlyMode) {
               setChainHandles(txHandles);
             } else {
@@ -167,15 +176,22 @@ export function useHandleFiltering(
           setTxFilterIds(null);
           const currentNodes = browseNodesRef.current;
           const qLower = q.toLowerCase();
-          const matches = currentNodes.filter((n) => n.id.toLowerCase().includes(qLower));
+          const matches = currentNodes.filter((n) =>
+            n.id.toLowerCase().includes(qLower)
+          );
           let seedId: string | null = null;
           if (matches.length === 1) {
             seedId = matches[0].id;
           } else {
-            const exact = currentNodes.find((n) => n.id.toLowerCase() === qLower);
+            const exact = currentNodes.find(
+              (n) => n.id.toLowerCase() === qLower
+            );
             if (exact) seedId = exact.id;
           }
-          if (!seedId) { setChainHandles(null); return; }
+          if (!seedId) {
+            setChainHandles(null);
+            return;
+          }
           const chain = await fetchHandleChain([seedId]);
           if (!cancelled) setChainHandles(chain);
         }
@@ -189,11 +205,16 @@ export function useHandleFiltering(
     // Immediate for exact matches (address/tx/handle), debounce for partial
     if (isEthAddress(q) || isTxHash(q)) {
       doSearch();
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }
 
     const timer = setTimeout(doSearch, 500);
-    return () => { cancelled = true; clearTimeout(timer); };
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [searchQuery, txOnlyMode]);
 
   // Build graph from chain-fetched handles
@@ -236,7 +257,10 @@ export function useHandleFiltering(
     );
 
     const prev = prevFilteredEdgesRef.current;
-    if (result.length === prev.length && result.every((e, i) => e.id === prev[i].id)) {
+    if (
+      result.length === prev.length &&
+      result.every((e, i) => e.id === prev[i].id)
+    ) {
       return prev;
     }
     prevFilteredEdgesRef.current = result;
@@ -269,7 +293,9 @@ export function useHandleFiltering(
 export function useNodeSelection() {
   const [selectedHandle, setSelectedHandle] = useState<Handle | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedHandleResolved, setSelectedHandleResolved] = useState<boolean | null>(null);
+  const [selectedHandleResolved, setSelectedHandleResolved] = useState<
+    boolean | null
+  >(null);
   const [isLoadingSelectedStatus, setIsLoadingSelectedStatus] = useState(false);
 
   const selectNode = useCallback(async (nodeId: string) => {

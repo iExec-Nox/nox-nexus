@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
-import type Sigma from "sigma";
+import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import type Sigma from 'sigma';
 
 interface ZoomControlsProps {
   sigma: Sigma | null;
@@ -29,7 +29,7 @@ export default function ZoomControls({ sigma }: ZoomControlsProps) {
   };
 
   const btnClass =
-    "flex items-center justify-center w-8 h-8 rounded-lg border border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent-dim)] transition-all duration-200 cursor-pointer";
+    'flex items-center justify-center w-8 h-8 rounded-lg border border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent-dim)] transition-all duration-200 cursor-pointer';
 
   return (
     <div className="absolute bottom-6 right-6 flex flex-col gap-1.5 z-10">

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 import {
   X,
   Copy,
@@ -13,10 +13,10 @@ import {
   CircleCheck,
   CircleAlert,
   Loader2,
-} from "lucide-react";
-import { Handle } from "@/lib/types";
-import { OPERATOR_COLORS, OPERATOR_LABELS } from "@/lib/constants";
-import { decodeHandle } from "@/lib/handle-decode";
+} from 'lucide-react';
+import { Handle } from '@/lib/types';
+import { OPERATOR_COLORS, OPERATOR_LABELS } from '@/lib/constants';
+import { decodeHandle } from '@/lib/handle-decode';
 
 interface HandleDetailPanelProps {
   handle: Handle | null;
@@ -105,7 +105,7 @@ export default function HandleDetailPanel({
   return (
     <div
       className={`absolute right-0 top-0 z-40 flex h-full w-[380px] flex-col border-l border-[var(--color-border)] bg-[var(--color-deep)]/95 backdrop-blur-xl transition-transform duration-300 ease-in-out ${
-        isOpen ? "translate-x-0" : "translate-x-full"
+        isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
       {handle && (
@@ -145,9 +145,9 @@ export default function HandleDetailPanel({
                     <div>
                       <SectionLabel>Unique</SectionLabel>
                       <span className="inline-flex items-center rounded-md bg-orange-500/10 px-2 py-1 font-[family-name:var(--font-mono)] text-xs font-medium text-orange-400 border border-orange-500/20">
-                        {info.unique ? "Unique" : "Shared"}
+                        {info.unique ? 'Unique' : 'Shared'}
                       </span>
-                    </div>{" "}
+                    </div>{' '}
                     <div>
                       <SectionLabel>Chain ID</SectionLabel>
                       <span className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-2 py-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-text-secondary)]">
@@ -170,16 +170,16 @@ export default function HandleDetailPanel({
                   <span
                     className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
                     style={{
-                      backgroundColor: `${OPERATOR_COLORS[handle.operator] ?? "#64748b"}20`,
-                      color: OPERATOR_COLORS[handle.operator] ?? "#64748b",
-                      border: `1px solid ${OPERATOR_COLORS[handle.operator] ?? "#64748b"}40`,
+                      backgroundColor: `${OPERATOR_COLORS[handle.operator] ?? '#64748b'}20`,
+                      color: OPERATOR_COLORS[handle.operator] ?? '#64748b',
+                      border: `1px solid ${OPERATOR_COLORS[handle.operator] ?? '#64748b'}40`,
                     }}
                   >
                     <span
                       className="h-1.5 w-1.5 rounded-full"
                       style={{
                         backgroundColor:
-                          OPERATOR_COLORS[handle.operator] ?? "#64748b",
+                          OPERATOR_COLORS[handle.operator] ?? '#64748b',
                       }}
                     />
                     {OPERATOR_LABELS[handle.operator] ?? handle.operator}
@@ -191,15 +191,15 @@ export default function HandleDetailPanel({
                   <span
                     className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
                     style={{
-                      backgroundColor: `${OPERATOR_COLORS["EncryptedInput"]}20`,
-                      color: OPERATOR_COLORS["EncryptedInput"],
-                      border: `1px solid ${OPERATOR_COLORS["EncryptedInput"]}40`,
+                      backgroundColor: `${OPERATOR_COLORS['EncryptedInput']}20`,
+                      color: OPERATOR_COLORS['EncryptedInput'],
+                      border: `1px solid ${OPERATOR_COLORS['EncryptedInput']}40`,
                     }}
                   >
                     <span
                       className="h-1.5 w-1.5 rounded-full"
                       style={{
-                        backgroundColor: OPERATOR_COLORS["EncryptedInput"],
+                        backgroundColor: OPERATOR_COLORS['EncryptedInput'],
                       }}
                     />
                     Encrypted Input from Handle Gateway
@@ -298,7 +298,7 @@ export default function HandleDetailPanel({
                           className="h-2 w-2 flex-shrink-0 rounded-full"
                           style={{
                             backgroundColor:
-                              OPERATOR_COLORS[parent.operator] ?? "#64748b",
+                              OPERATOR_COLORS[parent.operator] ?? '#64748b',
                           }}
                         />
                       </div>
@@ -332,7 +332,7 @@ export default function HandleDetailPanel({
                           className="h-2 w-2 flex-shrink-0 rounded-full"
                           style={{
                             backgroundColor:
-                              OPERATOR_COLORS[child.operator] ?? "#64748b",
+                              OPERATOR_COLORS[child.operator] ?? '#64748b',
                           }}
                         />
                       </div>
@@ -380,9 +380,9 @@ export default function HandleDetailPanel({
                             <td className="px-2 py-1.5">
                               <span
                                 className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                                  role.role === "ADMIN"
-                                    ? "bg-amber-500/10 text-amber-400"
-                                    : "bg-blue-500/10 text-blue-400"
+                                  role.role === 'ADMIN'
+                                    ? 'bg-amber-500/10 text-amber-400'
+                                    : 'bg-blue-500/10 text-blue-400'
                                 }`}
                               >
                                 {role.role}
