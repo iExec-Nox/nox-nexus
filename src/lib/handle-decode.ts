@@ -129,12 +129,12 @@ export function decodeHandle(handle: string): HandleInfo | null {
   if (hex.length !== 64) return null;
 
   const typeCode = parseInt(hex.slice(10, 12), 16); // byte 5
-  const atributeCode = parseInt(hex.slice(12, 14), 16); // byte 6
+  const attributeCode = parseInt(hex.slice(12, 14), 16); // byte 6
   const chainId = parseInt(hex.slice(2, 10), 16); // bytes 1-4
   const version = parseInt(hex.slice(0, 2), 16); // byte 0
 
   const solidityType = SOLIDITY_TYPES[typeCode] ?? `unknown(${typeCode})`;
-  const unique = atributeCode === 1; // byte 6
+  const unique = attributeCode === 1; // byte 6
 
   return { solidityType, chainId, version, unique };
 }

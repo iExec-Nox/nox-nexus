@@ -2,19 +2,17 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { ALL_OPERATORS } from '@/lib/constants';
-import type { LayoutMode } from '@/lib/graph-layouts';
-import {
-  useHandleData,
-  useHandleFiltering,
-  useNodeSelection,
-  isEthAddress,
-  isTxHash,
-} from '@/lib/use-handle-data';
+import { isEthAddress, isTxHash } from '@/lib/search';
+import { useHandleData } from '@/lib/use-handle-data';
+import { useHandleFiltering } from '@/lib/use-handle-filtering';
+import { useNodeSelection } from '@/lib/use-node-selection';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import dynamic from 'next/dynamic';
 import GraphStats from '@/components/GraphStats';
+import HandleDetailPanel from '@/components/HandleDetailPanel';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 const GraphCanvas = dynamic(() => import('@/components/GraphCanvas'), {
   ssr: false,
@@ -26,8 +24,8 @@ const GraphCanvas = dynamic(() => import('@/components/GraphCanvas'), {
     </div>
   ),
 });
-import HandleDetailPanel from '@/components/HandleDetailPanel';
-import LoadingOverlay from '@/components/LoadingOverlay';
+
+const DEFAULT_TIMEFRAME_HOURS = 48;
 
 export default function Home() {
   return (
@@ -40,21 +38,21 @@ export default function Home() {
 function Dashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
+
   const initialSearch = searchParams.get('search') ?? '';
   const initialTimeframe = searchParams.get('timeframe');
   const parsedTimeframe =
     initialTimeframe === 'all'
       ? null
       : initialTimeframe
-        ? Number(initialTimeframe) || 48
-        : 48;
+        ? Number(initialTimeframe) || DEFAULT_TIMEFRAME_HOURS
+        : DEFAULT_TIMEFRAME_HOURS;
 
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedOperators, setSelectedOperators] = useState<string[]>([
     ...ALL_OPERATORS,
   ]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('force');
   const [timeframeHours, setTimeframeHours] = useState<number | null>(
     parsedTimeframe
   );
@@ -79,16 +77,14 @@ function Dashboard() {
     }
     if (timeframeHours === null) {
       params.set('timeframe', 'all');
-    } else if (timeframeHours !== 48) {
-      params.set('timeframe', String(timeframeHours));
     } else {
-      params.delete('timeframe');
+      params.set('timeframe', String(timeframeHours));
     }
     router.replace(`/dashboard?${params.toString()}`, { scroll: false });
   }, [searchQuery, timeframeHours, router]);
 
   const {
-    handles,
+    handleCount,
     isLoading,
     loadHandles,
     nodes,
@@ -97,7 +93,7 @@ function Dashboard() {
     isLoadingStatuses,
     unresolvedCount,
     unresolvedNodeIds,
-  } = useHandleData(timeframeHours);
+  } = useHandleData(timeframeHours, true);
 
   const {
     filteredNodes,
@@ -124,16 +120,20 @@ function Dashboard() {
     clearSelection,
   } = useNodeSelection();
 
-  // Clear selection when search changes to address/tx mode
-  useEffect(() => {
-    const q = searchQuery.trim();
-    if (isEthAddress(q) || isTxHash(q)) {
-      clearSelection();
-    }
-    if (!isTxHash(q)) {
-      setTxOnlyMode(true);
-    }
-  }, [searchQuery, clearSelection]);
+  // Wrapper that handles search-change side effects (replaces effect-based approach)
+  const updateSearch = useCallback(
+    (q: string) => {
+      setSearchQuery(q);
+      const trimmed = q.trim();
+      if (isEthAddress(trimmed) || isTxHash(trimmed)) {
+        clearSelection();
+      }
+      if (!isTxHash(trimmed)) {
+        setTxOnlyMode(true);
+      }
+    },
+    [clearSelection]
+  );
 
   const handleNodeClick = useCallback(
     async (nodeId: string) => {
@@ -162,7 +162,7 @@ function Dashboard() {
   const handleReset = useCallback(() => {
     setSearchQuery('');
     setSelectedOperators([...ALL_OPERATORS]);
-    setTimeframeHours(48);
+    setTimeframeHours(DEFAULT_TIMEFRAME_HOURS);
     setTxOnlyMode(true);
     clearSelection();
   }, [clearSelection]);
@@ -178,9 +178,9 @@ function Dashboard() {
     <div className="flex h-screen flex-col overflow-hidden">
       <Header
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={updateSearch}
         onReset={handleReset}
-        handleCount={handles.length}
+        handleCount={handleCount}
         isLoading={isLoading}
         onRefresh={loadHandles}
         isAddressSearch={addressFilterIds !== null}
@@ -223,8 +223,6 @@ function Dashboard() {
             }
             highlightedOperators={selectedOperators}
             focusNodeId={focusNodeId}
-            layoutMode={layoutMode}
-            onLayoutChange={setLayoutMode}
             unresolvedNodeIds={
               highlightUnresolved ? unresolvedNodeIds : undefined
             }
@@ -242,7 +240,7 @@ function Dashboard() {
           handle={selectedHandle}
           onClose={clearSelection}
           onHandleClick={handleNodeClick}
-          onAddressSearch={setSearchQuery}
+          onAddressSearch={updateSearch}
           isResolved={selectedHandleResolved}
           isLoadingStatus={isLoadingSelectedStatus}
         />

@@ -247,6 +247,8 @@ export async function fetchHandlesByTxHash(txHash: string): Promise<Handle[]> {
   return allHandles;
 }
 
+// --------------- Handle chain ---------------
+
 const MAX_CHAIN_DEPTH = 20;
 
 export async function fetchHandleChain(seedIds: string[]): Promise<Handle[]> {

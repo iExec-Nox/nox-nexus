@@ -46,8 +46,6 @@ export function buildGraph(handles: Handle[]): {
     const node: GraphNode = {
       id: handle.id,
       label: formatLabel(handle.id),
-      x: Math.random() * 1000,
-      y: Math.random() * 1000,
       size: computeNodeSize(connectionCount),
       color,
       operator,

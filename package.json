@@ -11,25 +11,19 @@
     "check-format": "prettier --check ."
   },
   "dependencies": {
-    "@sigma/edge-curve": "^3.1.0",
-    "graphology": "^0.26.0",
-    "graphology-components": "^1.5.4",
-    "graphology-layout-forceatlas2": "^0.10.1",
-    "graphology-layout-noverlap": "^0.4.2",
-    "graphology-types": "^0.24.8",
+    "@cosmos.gl/graph": "^2.6.4",
     "graphql": "^16.13.1",
     "graphql-request": "^7.4.0",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "sigma": "^3.0.2"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "prettier": "^3.8.1",

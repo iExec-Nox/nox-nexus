@@ -17,6 +17,7 @@ import {
 import { Handle } from '@/lib/types';
 import { OPERATOR_COLORS, OPERATOR_LABELS } from '@/lib/constants';
 import { decodeHandle } from '@/lib/handle-decode';
+import { truncateHex } from '@/lib/utils';
 
 interface HandleDetailPanelProps {
   handle: Handle | null;
@@ -25,11 +26,6 @@ interface HandleDetailPanelProps {
   onAddressSearch: (address: string) => void;
   isResolved: boolean | null;
   isLoadingStatus: boolean;
-}
-
-function truncateHex(hex: string, chars = 8): string {
-  if (hex.length <= chars * 2 + 2) return hex;
-  return `${hex.slice(0, chars + 2)}...${hex.slice(-chars)}`;
 }
 
 function CopyableHex({ value }: { value: string }) {
@@ -147,7 +143,7 @@ export default function HandleDetailPanel({
                       <span className="inline-flex items-center rounded-md bg-orange-500/10 px-2 py-1 font-[family-name:var(--font-mono)] text-xs font-medium text-orange-400 border border-orange-500/20">
                         {info.unique ? 'Unique' : 'Shared'}
                       </span>
-                    </div>{' '}
+                    </div>
                     <div>
                       <SectionLabel>Chain ID</SectionLabel>
                       <span className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-2 py-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-text-secondary)]">
