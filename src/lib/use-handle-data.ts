@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Handle, GraphNode, GraphEdge } from '@/lib/types';
 import {
-  fetchAllHandlesPaginated,
-  fetchHandlesSince,
   fetchHandleById,
   fetchHandleIdsByAccount,
   fetchHandlesByTxHash,
@@ -18,30 +16,45 @@ import {
 const isEthAddress = (q: string) => /^0x[0-9a-fA-F]{40}$/.test(q.trim());
 const isTxHash = (q: string) => /^0x[0-9a-fA-F]{64}$/.test(q.trim());
 
+interface GraphApiResponse {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  operatorCounts: Record<string, number>;
+  meta: {
+    handleCount: number;
+    computedAt: number;
+  };
+}
+
 export function useHandleData(
   timeframeHours: number | null,
   enabled: boolean = true
 ) {
-  const [handles, setHandles] = useState<Handle[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [nodes, setNodes] = useState<GraphNode[]>([]);
+  const [edges, setEdges] = useState<GraphEdge[]>([]);
+  const [handleCount, setHandleCount] = useState(0);
+  const [operatorCounts, setOperatorCounts] = useState<Record<string, number>>(
+    {}
+  );
   const [handleStatuses, setHandleStatuses] = useState<HandleStatusMap>({});
   const [isLoadingStatuses, setIsLoadingStatuses] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadHandles = useCallback(async () => {
     if (!enabled) return;
     setIsLoading(true);
     try {
-      let data: Handle[];
-      if (timeframeHours !== null) {
-        const sinceTimestamp =
-          Math.floor(Date.now() / 1000) - timeframeHours * 3600;
-        data = await fetchHandlesSince(sinceTimestamp);
-      } else {
-        data = await fetchAllHandlesPaginated();
-      }
-      setHandles(data);
+      const timeframe =
+        timeframeHours === null ? 'all' : String(timeframeHours);
+      const res = await fetch(`/api/graph/${timeframe}`);
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data: GraphApiResponse = await res.json();
+      setNodes(data.nodes);
+      setEdges(data.edges);
+      setHandleCount(data.meta.handleCount);
+      setOperatorCounts(data.operatorCounts);
     } catch (err) {
-      console.error('Failed to fetch handles:', err);
+      console.error('Failed to fetch graph:', err);
     } finally {
       setIsLoading(false);
     }
@@ -51,30 +64,16 @@ export function useHandleData(
     loadHandles();
   }, [loadHandles]);
 
+  // Fetch handle statuses in background after graph loads
   useEffect(() => {
     setHandleStatuses({});
-    if (handles.length === 0) return;
-    const ids = handles.map((h) => h.id);
+    if (nodes.length === 0) return;
+    const ids = nodes.map((n) => n.id);
     setIsLoadingStatuses(true);
     fetchHandleStatuses(ids)
       .then(setHandleStatuses)
       .finally(() => setIsLoadingStatuses(false));
-  }, [handles]);
-
-  const { nodes, edges } = useMemo(() => buildGraph(handles), [handles]);
-
-  const operatorCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const node of nodes) {
-      counts[node.operator] = (counts[node.operator] ?? 0) + 1;
-    }
-    return counts;
   }, [nodes]);
-
-  const unresolvedCount = useMemo(
-    () => Object.values(handleStatuses).filter((r) => r === false).length,
-    [handleStatuses]
-  );
 
   const unresolvedNodeIds = useMemo(
     () =>
@@ -86,14 +85,18 @@ export function useHandleData(
     [handleStatuses]
   );
 
+  const unresolvedCount = useMemo(
+    () => Object.values(handleStatuses).filter((r) => r === false).length,
+    [handleStatuses]
+  );
+
   return {
-    handles,
+    handleCount,
     isLoading,
     loadHandles,
     nodes,
     edges,
     operatorCounts,
-    handleStatuses,
     isLoadingStatuses,
     unresolvedCount,
     unresolvedNodeIds,

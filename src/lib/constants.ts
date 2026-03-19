@@ -21,6 +21,7 @@ export const OPERATOR_COLORS: Record<string, string> = {
   SafeMul: '#38bdf8', // light sky
   SafeDiv: '#38bdf8',
   Select: '#7c3aed', // violet
+  WrapAsPublicHandle: '#f59e0b', // amber
   Transfer: '#e879f9', // pink-magenta
   Mint: '#2dd4bf', // teal
   Burn: '#f472b6', // pink
@@ -45,6 +46,7 @@ export const OPERATOR_LABELS: Record<string, string> = {
   SafeMul: 'Safe Multiply',
   SafeDiv: 'Safe Divide',
   Select: 'Select',
+  WrapAsPublicHandle: 'Wrap As Public Handle',
   Transfer: 'Transfer',
   Mint: 'Mint',
   Burn: 'Burn',
@@ -71,6 +73,7 @@ export const CORE_PRIMITIVES: string[] = [
   'SafeMul',
   'SafeDiv',
   'Select',
+  'WrapAsPublicHandle',
 ];
 
 export const ADVANCED_FUNCTIONS: string[] = ['Transfer', 'Mint', 'Burn'];

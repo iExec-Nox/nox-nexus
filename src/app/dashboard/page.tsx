@@ -3,7 +3,6 @@
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ALL_OPERATORS } from '@/lib/constants';
-import type { LayoutMode } from '@/lib/graph-layouts';
 import {
   useHandleData,
   useHandleFiltering,
@@ -48,7 +47,7 @@ function Dashboard() {
     initialTimeframe === 'all'
       ? null
       : initialTimeframe
-        ? Number(initialTimeframe) || 24
+        ? Number(initialTimeframe) || 48
         : null;
 
   const [searchQuery, setSearchQuery] = useState(initialSearch);
@@ -56,7 +55,6 @@ function Dashboard() {
     ...ALL_OPERATORS,
   ]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('force');
   const [timeframeHours, setTimeframeHours] = useState<number | null>(
     parsedTimeframe
   );
@@ -103,7 +101,7 @@ function Dashboard() {
   }, [searchQuery, timeframeHours, router]);
 
   const {
-    handles,
+    handleCount,
     isLoading,
     loadHandles,
     nodes,
@@ -177,7 +175,7 @@ function Dashboard() {
   const handleReset = useCallback(() => {
     setSearchQuery('');
     setSelectedOperators([...ALL_OPERATORS]);
-    setTimeframeHours(24);
+    setTimeframeHours(48);
     setTxOnlyMode(true);
     clearSelection();
   }, [clearSelection]);
@@ -195,7 +193,7 @@ function Dashboard() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onReset={handleReset}
-        handleCount={handles.length}
+        handleCount={handleCount}
         isLoading={isLoading}
         onRefresh={loadHandles}
         isAddressSearch={addressFilterIds !== null}
@@ -238,8 +236,6 @@ function Dashboard() {
             }
             highlightedOperators={selectedOperators}
             focusNodeId={focusNodeId}
-            layoutMode={layoutMode}
-            onLayoutChange={setLayoutMode}
             unresolvedNodeIds={
               highlightUnresolved ? unresolvedNodeIds : undefined
             }
