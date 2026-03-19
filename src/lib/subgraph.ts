@@ -247,38 +247,6 @@ export async function fetchHandlesByTxHash(txHash: string): Promise<Handle[]> {
   return allHandles;
 }
 
-// --------------- Auto-detect optimal timeframe ---------------
-
-const HANDLES_COUNT_SINCE_QUERY = gql`
-  query CountHandlesSince($timestampGte: BigInt!, $first: Int!) {
-    handles(first: $first, where: { blockTimestamp_gte: $timestampGte }) {
-      id
-    }
-  }
-`;
-
-const MAX_SAFE_NODES = 3000;
-const TIMEFRAME_CANDIDATES = [720, 168, 48, 24, 6, 2, 1];
-
-export async function autoDetectTimeframe(): Promise<number> {
-  const now = Math.floor(Date.now() / 1000);
-  const results = await Promise.all(
-    TIMEFRAME_CANDIDATES.map(async (hours) => {
-      const since = now - hours * 3600;
-      const data = await client.request<{ handles: { id: string }[] }>(
-        HANDLES_COUNT_SINCE_QUERY,
-        { timestampGte: since.toString(), first: MAX_SAFE_NODES + 1 }
-      );
-      return { hours, count: data.handles.length };
-    })
-  );
-
-  for (const { hours, count } of results) {
-    if (count <= MAX_SAFE_NODES) return hours;
-  }
-  return TIMEFRAME_CANDIDATES[TIMEFRAME_CANDIDATES.length - 1];
-}
-
 // --------------- Handle chain ---------------
 
 const MAX_CHAIN_DEPTH = 20;

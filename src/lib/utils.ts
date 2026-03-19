@@ -1,8 +1,6 @@
-export function truncateHandle(id: string): string {
-  if (id.length <= 12) return id;
-  const clean = id.startsWith('0x') ? id.slice(2) : id;
-  if (clean.length <= 10) return id;
-  return `0x${clean.slice(0, 6)}...${clean.slice(-4)}`;
+export function truncateHex(hex: string, chars = 8): string {
+  if (hex.length <= chars * 2 + 2) return hex;
+  return `${hex.slice(0, chars + 2)}...${hex.slice(-chars)}`;
 }
 
 export function mixWithRed(hex: string, amount: number): string {

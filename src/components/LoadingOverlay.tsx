@@ -2,13 +2,9 @@
 
 interface LoadingOverlayProps {
   message: string;
-  progress?: number;
 }
 
-export default function LoadingOverlay({
-  message,
-  progress,
-}: LoadingOverlayProps) {
+export default function LoadingOverlay({ message }: LoadingOverlayProps) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-void)]/90 backdrop-blur-sm">
       <div className="flex flex-col items-center gap-6">
@@ -42,25 +38,9 @@ export default function LoadingOverlay({
           </svg>
         </div>
 
-        <div className="flex flex-col items-center gap-3">
-          <p className="text-sm font-medium text-[var(--color-text-secondary)]">
-            {message}
-          </p>
-
-          {progress !== undefined && (
-            <div className="w-48">
-              <div className="h-1 overflow-hidden rounded-full bg-[var(--color-surface)]">
-                <div
-                  className="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-500 ease-out"
-                  style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-                />
-              </div>
-              <p className="mt-1.5 text-center text-[10px] tabular-nums text-[var(--color-text-muted)]">
-                {Math.round(progress)}%
-              </p>
-            </div>
-          )}
-        </div>
+        <p className="text-sm font-medium text-[var(--color-text-secondary)]">
+          {message}
+        </p>
       </div>
     </div>
   );
