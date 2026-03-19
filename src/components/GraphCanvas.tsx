@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useRef, useEffect, useState, useCallback } from "react";
-import Graph from "graphology";
-import Sigma from "sigma";
-import { createEdgeCurveProgram } from "@sigma/edge-curve";
-import type { GraphNode, GraphEdge } from "@/lib/types";
-import { OPERATOR_COLORS } from "@/lib/constants";
-import { computeLayout, type LayoutMode } from "@/lib/graph-layouts";
+import { useRef, useEffect, useState, useCallback } from 'react';
+import Graph from 'graphology';
+import Sigma from 'sigma';
+import { createEdgeCurveProgram } from '@sigma/edge-curve';
+import type { GraphNode, GraphEdge } from '@/lib/types';
+import { OPERATOR_COLORS } from '@/lib/constants';
+import { computeLayout, type LayoutMode } from '@/lib/graph-layouts';
 import {
   drawDarkLabel,
   drawDarkHover,
@@ -14,13 +14,13 @@ import {
   mixWithRed,
   DIM_COLOR,
   DIM_EDGE_COLOR,
-} from "@/lib/graph-rendering";
-import ZoomControls from "./ZoomControls";
-import LayoutSelector from "./LayoutSelector";
+} from '@/lib/graph-rendering';
+import ZoomControls from './ZoomControls';
+import LayoutSelector from './LayoutSelector';
 
 const EdgeCurvedArrowProgram = createEdgeCurveProgram({
   arrowHead: {
-    extremity: "target",
+    extremity: 'target',
     lengthToThicknessRatio: 5,
     widenessToThicknessRatio: 4,
   },
@@ -70,7 +70,9 @@ export default function GraphCanvas({
   const selectedNodeIdRef = useRef<string | null>(selectedNodeId);
   const searchQueryRef = useRef<string>(searchQuery);
   const highlightedOperatorsRef = useRef<string[]>(highlightedOperators);
-  const unresolvedNodeIdsRef = useRef<Set<string> | null>(unresolvedNodeIds ?? null);
+  const unresolvedNodeIdsRef = useRef<Set<string> | null>(
+    unresolvedNodeIds ?? null
+  );
 
   // Store callbacks in refs to avoid tearing down Sigma on callback changes
   const onNodeClickRef = useRef(onNodeClick);
@@ -95,8 +97,8 @@ export default function GraphCanvas({
     const g = graphRef.current;
     if (!r || !g || !g.hasNode(nodeId)) return;
 
-    const graphX = g.getNodeAttribute(nodeId, "x") as number;
-    const graphY = g.getNodeAttribute(nodeId, "y") as number;
+    const graphX = g.getNodeAttribute(nodeId, 'x') as number;
+    const graphY = g.getNodeAttribute(nodeId, 'y') as number;
     const viewportCoords = r.graphToViewport({ x: graphX, y: graphY });
     const framedCoords = r.viewportToFramedGraph(viewportCoords);
 
@@ -112,7 +114,7 @@ export default function GraphCanvas({
     for (const node of nodes) {
       const color =
         OPERATOR_COLORS[node.operator as keyof typeof OPERATOR_COLORS] ??
-        "#6b7280";
+        '#6b7280';
       graph.addNode(node.id, {
         label: truncateHandle(node.id),
         size: node.size ?? 2,
@@ -128,8 +130,8 @@ export default function GraphCanvas({
         if (!graph.hasEdge(edge.id)) {
           graph.addEdgeWithKey(edge.id, edge.source, edge.target, {
             size: edge.size ?? 0.5,
-            color: edge.color ?? "#1e2044",
-            type: "curvedArrow",
+            color: edge.color ?? '#1e2044',
+            type: 'curvedArrow',
           });
         }
       }
@@ -158,19 +160,19 @@ export default function GraphCanvas({
     graphRef.current = graph;
 
     const renderer = new Sigma(graph, containerRef.current, {
-      defaultEdgeType: "curvedArrow",
+      defaultEdgeType: 'curvedArrow',
       edgeProgramClasses: {
         curvedArrow: EdgeCurvedArrowProgram,
       },
       defaultDrawNodeLabel: drawDarkLabel,
       defaultDrawNodeHover: drawDarkHover,
-      labelFont: "JetBrains Mono, monospace",
+      labelFont: 'JetBrains Mono, monospace',
       labelSize: 11,
       labelDensity: 0.02,
       labelGridCellSize: 400,
-      labelColor: { color: "#d3d3d8" },
-      defaultEdgeColor: "#1e2044",
-      defaultNodeColor: "#6b7280",
+      labelColor: { color: '#d3d3d8' },
+      defaultEdgeColor: '#1e2044',
+      defaultNodeColor: '#6b7280',
       renderLabels: false,
       labelRenderedSizeThreshold: 6,
       nodeReducer: (node, data) => {
@@ -188,7 +190,7 @@ export default function GraphCanvas({
           currentHighlightedOperators.includes(nodeAttrs.operator as string);
 
         const searchMatch =
-          currentSearchQuery === "" ||
+          currentSearchQuery === '' ||
           node.toLowerCase().startsWith(currentSearchQuery.toLowerCase()) ||
           node.toLowerCase().includes(currentSearchQuery.toLowerCase());
 
@@ -200,7 +202,7 @@ export default function GraphCanvas({
 
         // Unresolved nodes: amber tint + slightly smaller
         if (isUnresolved) {
-          res.color = mixWithRed(data.color ?? "#6b7280", 0.5);
+          res.color = mixWithRed(data.color ?? '#6b7280', 0.5);
           res.size = (data.size ?? 2) * 0.75;
         }
 
@@ -209,7 +211,7 @@ export default function GraphCanvas({
             res.highlighted = true;
           } else {
             res.color = DIM_COLOR;
-            res.label = "";
+            res.label = '';
             res.size = (data.size ?? 2) * 0.6;
           }
           return res;
@@ -224,7 +226,7 @@ export default function GraphCanvas({
             res.size = (data.size ?? 2) * 1.2;
           } else {
             res.color = DIM_COLOR;
-            res.label = "";
+            res.label = '';
             res.size = (data.size ?? 2) * 0.6;
           }
           return res;
@@ -233,7 +235,7 @@ export default function GraphCanvas({
         if (currentSearchQuery || currentHighlightedOperators.length > 0) {
           if (!(searchMatch && operatorMatch)) {
             res.color = DIM_COLOR;
-            res.label = "";
+            res.label = '';
           }
           return res;
         }
@@ -252,7 +254,7 @@ export default function GraphCanvas({
 
         if (hovered) {
           if (src === hovered || tgt === hovered) {
-            const baseColor = (res.color ?? "").replace(/[0-9a-f]{2}$/i, "");
+            const baseColor = (res.color ?? '').replace(/[0-9a-f]{2}$/i, '');
             res.color = baseColor || res.color;
             res.size = 1;
           } else {
@@ -264,7 +266,7 @@ export default function GraphCanvas({
         if (currentSelectedNodeId) {
           if (src === currentSelectedNodeId || tgt === currentSelectedNodeId) {
             // Boost connected edges: remove alpha suffix, increase size
-            const baseColor = (res.color ?? "").replace(/[0-9a-f]{2}$/i, "");
+            const baseColor = (res.color ?? '').replace(/[0-9a-f]{2}$/i, '');
             res.color = baseColor || res.color;
             res.size = 1;
           } else {
@@ -285,10 +287,10 @@ export default function GraphCanvas({
             currentHighlightedOperators.includes(tgtAttrs.operator as string);
 
           const srcSearchMatch =
-            currentSearchQuery === "" ||
+            currentSearchQuery === '' ||
             src.toLowerCase().includes(currentSearchQuery.toLowerCase());
           const tgtSearchMatch =
-            currentSearchQuery === "" ||
+            currentSearchQuery === '' ||
             tgt.toLowerCase().includes(currentSearchQuery.toLowerCase());
 
           if (
@@ -306,38 +308,38 @@ export default function GraphCanvas({
     sigmaRef.current = renderer;
     setSigmaInstance(renderer);
 
-    renderer.on("enterNode", ({ node }) => {
+    renderer.on('enterNode', ({ node }) => {
       hoveredNodeRef.current = node;
       renderer.refresh();
     });
 
-    renderer.on("leaveNode", () => {
+    renderer.on('leaveNode', () => {
       hoveredNodeRef.current = null;
       renderer.refresh();
     });
 
-    renderer.on("clickNode", ({ node }) => {
+    renderer.on('clickNode', ({ node }) => {
       onNodeClickRef.current(node);
     });
 
-    renderer.on("clickStage", () => {
+    renderer.on('clickStage', () => {
       onBackgroundClickRef.current();
     });
 
     // --- Drag & Drop ---
-    renderer.on("downNode", (e) => {
+    renderer.on('downNode', (e) => {
       isDraggingRef.current = true;
       draggedNodeRef.current = e.node;
       // Disable camera drag while we drag a node
       renderer.getCamera().disable();
     });
 
-    renderer.getMouseCaptor().on("mousemovebody", (e) => {
+    renderer.getMouseCaptor().on('mousemovebody', (e) => {
       if (!isDraggingRef.current || !draggedNodeRef.current) return;
       // Map viewport coords to graph coords
       const pos = renderer.viewportToGraph(e);
-      graph.setNodeAttribute(draggedNodeRef.current, "x", pos.x);
-      graph.setNodeAttribute(draggedNodeRef.current, "y", pos.y);
+      graph.setNodeAttribute(draggedNodeRef.current, 'x', pos.x);
+      graph.setNodeAttribute(draggedNodeRef.current, 'y', pos.y);
       // Prevent sigma from showing hover while dragging
       e.preventSigmaDefault();
       e.original.preventDefault();
@@ -351,8 +353,8 @@ export default function GraphCanvas({
         renderer.getCamera().enable();
       }
     };
-    renderer.getMouseCaptor().on("mouseup", handleMouseUp);
-    renderer.getMouseCaptor().on("mousedown", () => {
+    renderer.getMouseCaptor().on('mouseup', handleMouseUp);
+    renderer.getMouseCaptor().on('mousedown', () => {
       // If clicking on stage (not a node), ensure drag state is clean
       if (hoveredNodeRef.current === null) {
         isDraggingRef.current = false;
@@ -370,21 +372,24 @@ export default function GraphCanvas({
       graph.forEachNode((node) => {
         const pos = finalPositions.get(node);
         if (pos) {
-          graph.setNodeAttribute(node, "x", pos.x);
-          graph.setNodeAttribute(node, "y", pos.y);
+          graph.setNodeAttribute(node, 'x', pos.x);
+          graph.setNodeAttribute(node, 'y', pos.y);
         }
       });
 
       // Boost node sizes for very small graphs so they're clearly visible
       if (nodeCount < 10) {
         graph.forEachNode((node) => {
-          const currentSize = graph.getNodeAttribute(node, "size") as number;
-          graph.setNodeAttribute(node, "size", Math.max(currentSize * 2.5, 6));
+          const currentSize = graph.getNodeAttribute(node, 'size') as number;
+          graph.setNodeAttribute(node, 'size', Math.max(currentSize * 2.5, 6));
         });
       }
 
       // Compute bounding box with padding
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      let minX = Infinity,
+        maxX = -Infinity,
+        minY = Infinity,
+        maxY = -Infinity;
       finalPositions.forEach((pos) => {
         if (pos.x < minX) minX = pos.x;
         if (pos.x > maxX) maxX = pos.x;
@@ -413,12 +418,19 @@ export default function GraphCanvas({
     } else {
       // --- Animated settling for large graphs ---
       // Compute graph center and bounding box
-      let gcx = 0, gcy = 0;
-      finalPositions.forEach((pos) => { gcx += pos.x; gcy += pos.y; });
+      let gcx = 0,
+        gcy = 0;
+      finalPositions.forEach((pos) => {
+        gcx += pos.x;
+        gcy += pos.y;
+      });
       gcx /= finalPositions.size || 1;
       gcy /= finalPositions.size || 1;
 
-      let minFX = Infinity, maxFX = -Infinity, minFY = Infinity, maxFY = -Infinity;
+      let minFX = Infinity,
+        maxFX = -Infinity,
+        minFY = Infinity,
+        maxFY = -Infinity;
       finalPositions.forEach((pos) => {
         if (pos.x < minFX) minFX = pos.x;
         if (pos.x > maxFX) maxFX = pos.x;
@@ -429,8 +441,16 @@ export default function GraphCanvas({
 
       // Start nodes scattered across the full graph area for gentle convergence
       graph.forEachNode((node) => {
-        graph.setNodeAttribute(node, "x", gcx + (Math.random() - 0.5) * graphSpan * 0.8);
-        graph.setNodeAttribute(node, "y", gcy + (Math.random() - 0.5) * graphSpan * 0.8);
+        graph.setNodeAttribute(
+          node,
+          'x',
+          gcx + (Math.random() - 0.5) * graphSpan * 0.8
+        );
+        graph.setNodeAttribute(
+          node,
+          'y',
+          gcy + (Math.random() - 0.5) * graphSpan * 0.8
+        );
       });
 
       renderer.refresh();
@@ -446,8 +466,8 @@ export default function GraphCanvas({
       const startPositions = new Map<string, { x: number; y: number }>();
       graph.forEachNode((node) => {
         startPositions.set(node, {
-          x: graph.getNodeAttribute(node, "x") as number,
-          y: graph.getNodeAttribute(node, "y") as number,
+          x: graph.getNodeAttribute(node, 'x') as number,
+          y: graph.getNodeAttribute(node, 'y') as number,
         });
       });
 
@@ -460,8 +480,8 @@ export default function GraphCanvas({
           const start = startPositions.get(node)!;
           const end = finalPositions.get(node)!;
           if (start && end) {
-            graph.setNodeAttribute(node, "x", start.x + (end.x - start.x) * t);
-            graph.setNodeAttribute(node, "y", start.y + (end.y - start.y) * t);
+            graph.setNodeAttribute(node, 'x', start.x + (end.x - start.x) * t);
+            graph.setNodeAttribute(node, 'y', start.y + (end.y - start.y) * t);
           }
         });
 
@@ -494,7 +514,14 @@ export default function GraphCanvas({
       }
       setSigmaInstance(null);
     };
-  }, [mounted, nodes, edges, buildGraphInstance, layoutMode, focusCameraOnNode]);
+  }, [
+    mounted,
+    nodes,
+    edges,
+    buildGraphInstance,
+    layoutMode,
+    focusCameraOnNode,
+  ]);
 
   // Update unresolved ref and refresh (no graph rebuild needed)
   useEffect(() => {

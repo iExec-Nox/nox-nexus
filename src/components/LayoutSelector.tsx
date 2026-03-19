@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Network, Circle, Grid3X3, Sun } from "lucide-react";
-import { type LayoutMode, LAYOUT_OPTIONS } from "@/lib/graph-layouts";
+import { Network, Circle, Grid3X3, Sun } from 'lucide-react';
+import { type LayoutMode, LAYOUT_OPTIONS } from '@/lib/graph-layouts';
 
 interface LayoutSelectorProps {
   layoutMode: LayoutMode;
@@ -22,8 +22,8 @@ export default function LayoutSelector({
   const btnClass = (active: boolean) =>
     `flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-200 cursor-pointer ${
       active
-        ? "border-[var(--color-accent-dim)] bg-[var(--color-accent)]/15 text-[var(--color-accent)]"
-        : "border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent-dim)]"
+        ? 'border-[var(--color-accent-dim)] bg-[var(--color-accent)]/15 text-[var(--color-accent)]'
+        : 'border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent-dim)]'
     }`;
 
   return (

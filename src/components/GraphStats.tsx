@@ -1,14 +1,11 @@
-"use client";
+'use client';
 
 interface GraphStatsProps {
   nodeCount: number;
   edgeCount: number;
 }
 
-export default function GraphStats({
-  nodeCount,
-  edgeCount,
-}: GraphStatsProps) {
+export default function GraphStats({ nodeCount, edgeCount }: GraphStatsProps) {
   return (
     <div className="flex items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-deep)]/80 px-3 py-1.5 backdrop-blur-md">
       <div className="flex items-center gap-1.5">

@@ -1,13 +1,19 @@
-"use client";
+'use client';
 
-import { ChevronLeft, ChevronRight, Filter, AlertTriangle, Check } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  AlertTriangle,
+  Check,
+} from 'lucide-react';
 import {
   OPERATOR_COLORS,
   OPERATOR_LABELS,
   OFF_CHAIN_OPS,
   CORE_PRIMITIVES,
   ADVANCED_FUNCTIONS,
-} from "@/lib/constants";
+} from '@/lib/constants';
 
 interface SidebarProps {
   operatorCounts: Record<string, number>;
@@ -40,20 +46,20 @@ function OperatorButton({
     <button
       onClick={onToggle}
       className={`group flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-all duration-150 ${
-        isSelected
-          ? "bg-[var(--color-surface)]"
-          : "opacity-40 hover:opacity-70"
+        isSelected ? 'bg-[var(--color-surface)]' : 'opacity-40 hover:opacity-70'
       }`}
     >
       <span
         className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded transition-all duration-150 border"
         style={{
-          backgroundColor: isSelected ? color : "transparent",
-          borderColor: isSelected ? color : "var(--color-text-muted)",
-          boxShadow: isSelected ? `0 0 6px ${color}40` : "none",
+          backgroundColor: isSelected ? color : 'transparent',
+          borderColor: isSelected ? color : 'var(--color-text-muted)',
+          boxShadow: isSelected ? `0 0 6px ${color}40` : 'none',
         }}
       >
-        {isSelected && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+        {isSelected && (
+          <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+        )}
       </span>
       <span className="flex-1 truncate text-xs text-[var(--color-text-secondary)]">
         {OPERATOR_LABELS[op] ?? op}
@@ -102,7 +108,7 @@ export default function Sidebar({
   return (
     <aside
       className={`relative flex h-full flex-col border-r border-[var(--color-border)] bg-[var(--color-deep)] transition-[width] duration-300 ease-in-out ${
-        isCollapsed ? "w-12" : "w-[260px]"
+        isCollapsed ? 'w-12' : 'w-[260px]'
       }`}
     >
       <button
@@ -152,38 +158,57 @@ export default function Sidebar({
                     disabled={isLoadingStatuses}
                     className={`group flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-all duration-150 ${
                       highlightUnresolved
-                        ? "bg-[var(--color-surface)]"
-                        : "opacity-40 hover:opacity-70"
-                    } ${isLoadingStatuses ? "opacity-50 cursor-not-allowed" : ""}`}
+                        ? 'bg-[var(--color-surface)]'
+                        : 'opacity-40 hover:opacity-70'
+                    } ${isLoadingStatuses ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <span
                       className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded border transition-all duration-150"
                       style={{
-                        backgroundColor: highlightUnresolved ? "#ef4444" : "transparent",
-                        borderColor: highlightUnresolved ? "#ef4444" : "var(--color-text-muted)",
-                        boxShadow: highlightUnresolved ? "0 0 6px #ef444440" : "none",
+                        backgroundColor: highlightUnresolved
+                          ? '#ef4444'
+                          : 'transparent',
+                        borderColor: highlightUnresolved
+                          ? '#ef4444'
+                          : 'var(--color-text-muted)',
+                        boxShadow: highlightUnresolved
+                          ? '0 0 6px #ef444440'
+                          : 'none',
                       }}
                     >
-                      {highlightUnresolved && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+                      {highlightUnresolved && (
+                        <Check
+                          className="h-2.5 w-2.5 text-white"
+                          strokeWidth={3}
+                        />
+                      )}
                     </span>
                     <AlertTriangle
                       className={`h-3 w-3 flex-shrink-0 ${
-                        highlightUnresolved ? "text-red-400" : "text-[var(--color-text-muted)]"
+                        highlightUnresolved
+                          ? 'text-red-400'
+                          : 'text-[var(--color-text-muted)]'
                       }`}
                     />
                     <span
                       className={`flex-1 text-xs font-medium ${
-                        highlightUnresolved ? "text-red-300" : "text-[var(--color-text-secondary)]"
+                        highlightUnresolved
+                          ? 'text-red-300'
+                          : 'text-[var(--color-text-secondary)]'
                       }`}
                     >
-                      {isLoadingStatuses ? "Loading statuses..." : "Show unresolved"}
+                      {isLoadingStatuses
+                        ? 'Loading statuses...'
+                        : 'Show unresolved'}
                     </span>
                     <span
                       className={`font-[family-name:var(--font-mono)] text-[10px] tabular-nums ${
-                        highlightUnresolved ? "text-red-400" : "text-[var(--color-text-muted)]"
+                        highlightUnresolved
+                          ? 'text-red-400'
+                          : 'text-[var(--color-text-muted)]'
                       }`}
                     >
-                      {isLoadingStatuses ? "..." : unresolvedCount}
+                      {isLoadingStatuses ? '...' : unresolvedCount}
                     </span>
                   </button>
                 </div>
@@ -195,7 +220,7 @@ export default function Sidebar({
                         key={op}
                         op={op}
                         isSelected={selectedOperators.includes(op)}
-                        color={OPERATOR_COLORS[op] ?? "#64748b"}
+                        color={OPERATOR_COLORS[op] ?? '#64748b'}
                         count={operatorCounts[op] ?? 0}
                         onToggle={() => onOperatorToggle(op)}
                       />
@@ -210,7 +235,7 @@ export default function Sidebar({
                         key={op}
                         op={op}
                         isSelected={selectedOperators.includes(op)}
-                        color={OPERATOR_COLORS[op] ?? "#64748b"}
+                        color={OPERATOR_COLORS[op] ?? '#64748b'}
                         count={operatorCounts[op] ?? 0}
                         onToggle={() => onOperatorToggle(op)}
                       />
@@ -225,7 +250,7 @@ export default function Sidebar({
                         key={op}
                         op={op}
                         isSelected={selectedOperators.includes(op)}
-                        color={OPERATOR_COLORS[op] ?? "#64748b"}
+                        color={OPERATOR_COLORS[op] ?? '#64748b'}
                         count={operatorCounts[op] ?? 0}
                         onToggle={() => onOperatorToggle(op)}
                       />

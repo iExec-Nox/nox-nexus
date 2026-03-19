@@ -6,7 +6,7 @@ export type HandleStatusMap = Record<string, boolean>;
 
 const BATCH_SIZE = 500;
 const MAX_CONCURRENT = 3;
-const PROXY_URL = "/api/handles-status";
+const PROXY_URL = '/api/handles-status';
 
 export async function fetchHandleStatuses(
   handleIds: string[]
@@ -25,8 +25,8 @@ export async function fetchHandleStatuses(
         const partial: HandleStatusMap = {};
         try {
           const res = await fetch(PROXY_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ handles: batch }),
           });
 
@@ -41,7 +41,7 @@ export async function fetchHandleStatuses(
             partial[id] = status.resolved;
           }
         } catch (err) {
-          console.error("Gateway status fetch failed:", err);
+          console.error('Gateway status fetch failed:', err);
           for (const id of batch) partial[id] = false;
         }
         return partial;
@@ -58,8 +58,8 @@ export async function fetchSingleHandleStatus(
 ): Promise<boolean> {
   try {
     const res = await fetch(PROXY_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ handles: [handleId] }),
     });
 
