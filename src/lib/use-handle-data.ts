@@ -18,13 +18,17 @@ import {
 const isEthAddress = (q: string) => /^0x[0-9a-fA-F]{40}$/.test(q.trim());
 const isTxHash = (q: string) => /^0x[0-9a-fA-F]{64}$/.test(q.trim());
 
-export function useHandleData(timeframeHours: number | null) {
+export function useHandleData(
+  timeframeHours: number | null,
+  enabled: boolean = true
+) {
   const [handles, setHandles] = useState<Handle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [handleStatuses, setHandleStatuses] = useState<HandleStatusMap>({});
   const [isLoadingStatuses, setIsLoadingStatuses] = useState(false);
 
   const loadHandles = useCallback(async () => {
+    if (!enabled) return;
     setIsLoading(true);
     try {
       let data: Handle[];
@@ -41,7 +45,7 @@ export function useHandleData(timeframeHours: number | null) {
     } finally {
       setIsLoading(false);
     }
-  }, [timeframeHours]);
+  }, [timeframeHours, enabled]);
 
   useEffect(() => {
     loadHandles();

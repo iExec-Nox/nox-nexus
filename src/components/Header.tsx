@@ -5,6 +5,7 @@ import { Search, RefreshCw, Hexagon, Clock, X } from 'lucide-react';
 
 const TIMEFRAME_OPTIONS: { value: number | null; label: string }[] = [
   { value: 1, label: '1h' },
+  { value: 2, label: '2h' },
   { value: 6, label: '6h' },
   { value: 24, label: '24h' },
   { value: 48, label: '48h' },

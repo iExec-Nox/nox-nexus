@@ -11,6 +11,7 @@ import {
   isEthAddress,
   isTxHash,
 } from '@/lib/use-handle-data';
+import { autoDetectTimeframe } from '@/lib/subgraph';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import dynamic from 'next/dynamic';
@@ -42,12 +43,13 @@ function Dashboard() {
   const router = useRouter();
   const initialSearch = searchParams.get('search') ?? '';
   const initialTimeframe = searchParams.get('timeframe');
+  const hasExplicitTimeframe = initialTimeframe !== null;
   const parsedTimeframe =
     initialTimeframe === 'all'
       ? null
       : initialTimeframe
-        ? Number(initialTimeframe) || 48
-        : 48;
+        ? Number(initialTimeframe) || 24
+        : null;
 
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedOperators, setSelectedOperators] = useState<string[]>([
@@ -58,8 +60,23 @@ function Dashboard() {
   const [timeframeHours, setTimeframeHours] = useState<number | null>(
     parsedTimeframe
   );
+  const [isAutoDetecting, setIsAutoDetecting] = useState(!hasExplicitTimeframe);
   const [highlightUnresolved, setHighlightUnresolved] = useState(false);
   const [txOnlyMode, setTxOnlyMode] = useState(true);
+
+  // Auto-detect optimal timeframe on first visit (no ?timeframe in URL)
+  useEffect(() => {
+    if (hasExplicitTimeframe) return;
+    let cancelled = false;
+    autoDetectTimeframe().then((hours) => {
+      if (cancelled) return;
+      setTimeframeHours(hours);
+      setIsAutoDetecting(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync search query and timeframe to URL
   // Note: searchParams is intentionally excluded from deps to avoid an
@@ -79,10 +96,8 @@ function Dashboard() {
     }
     if (timeframeHours === null) {
       params.set('timeframe', 'all');
-    } else if (timeframeHours !== 48) {
-      params.set('timeframe', String(timeframeHours));
     } else {
-      params.delete('timeframe');
+      params.set('timeframe', String(timeframeHours));
     }
     router.replace(`/dashboard?${params.toString()}`, { scroll: false });
   }, [searchQuery, timeframeHours, router]);
@@ -97,7 +112,7 @@ function Dashboard() {
     isLoadingStatuses,
     unresolvedCount,
     unresolvedNodeIds,
-  } = useHandleData(timeframeHours);
+  } = useHandleData(timeframeHours, !isAutoDetecting);
 
   const {
     filteredNodes,
@@ -162,7 +177,7 @@ function Dashboard() {
   const handleReset = useCallback(() => {
     setSearchQuery('');
     setSelectedOperators([...ALL_OPERATORS]);
-    setTimeframeHours(48);
+    setTimeframeHours(24);
     setTxOnlyMode(true);
     clearSelection();
   }, [clearSelection]);
@@ -248,7 +263,12 @@ function Dashboard() {
         />
       </div>
 
-      {isLoading && <LoadingOverlay message="Loading subgraph data..." />}
+      {isAutoDetecting && (
+        <LoadingOverlay message="Detecting optimal timeframe..." />
+      )}
+      {!isAutoDetecting && isLoading && (
+        <LoadingOverlay message="Loading subgraph data..." />
+      )}
       {isChainLoading && <LoadingOverlay message="Loading handle chain..." />}
     </div>
   );
