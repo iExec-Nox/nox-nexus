@@ -52,24 +52,32 @@ export default function Header({
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-xl">
       <div className="flex h-14 items-center justify-between px-5">
-        <Link
-          href="/dashboard"
-          onClick={onReset}
-          className="flex items-center gap-3 group"
-        >
-          <div className="logo-glow">
-            <Hexagon
-              className="h-6 w-6 text-[var(--color-accent)]"
-              strokeWidth={2.5}
-            />
-          </div>
-          <span className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-            NOX <span className="text-[var(--color-accent)]">NEXUS</span>
-          </span>
-          <span className="ml-1 rounded-full bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-medium text-[var(--color-accent)]">
-            EXPLORER
-          </span>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard"
+            onClick={onReset}
+            className="flex items-center gap-3 group"
+          >
+            <div className="logo-glow">
+              <Hexagon
+                className="h-6 w-6 text-[var(--color-accent)]"
+                strokeWidth={2.5}
+              />
+            </div>
+            <span className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
+              NOX <span className="text-[var(--color-accent)]">NEXUS</span>
+            </span>
+            <span className="ml-1 rounded-full bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-medium text-[var(--color-accent)]">
+              EXPLORER
+            </span>
+          </Link>
+          <Link
+            href="/trace"
+            className="rounded-full bg-[var(--color-surface)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors duration-150"
+          >
+            TRACE
+          </Link>
+        </div>
 
         <div className="relative w-full max-w-md mx-8">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-text-muted)]" />
