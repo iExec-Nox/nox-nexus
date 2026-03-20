@@ -20,9 +20,9 @@ jobs:
           node-version: "20"
           cache: npm
 
-      - run: npm ci
+      - run: npm ci --omit=dev
 
       - name: Check dependency licenses
         run: |
           npx license-checker --onlyAllow \
-            "MIT;ISC;BSD-2-Clause;BSD-3-Clause;Apache-2.0;0BSD;CC0-1.0;CC-BY-3.0;CC-BY-4.0;Python-2.0;Unlicense"
+            "MIT;Apache-2.0;ISC;LGPL-3.0-or-later;CC-BY-4.0;UNLICENSED;BSD-3-Clause;0BSD"
