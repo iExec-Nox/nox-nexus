@@ -1,5 +1,7 @@
-interface HandleStatus {
-  resolved: boolean;
+interface GatewayResponse {
+  payload: {
+    statuses: { handle: string; resolved: boolean }[];
+  };
 }
 
 export type HandleStatusMap = Record<string, boolean>;
@@ -7,6 +9,14 @@ export type HandleStatusMap = Record<string, boolean>;
 const BATCH_SIZE = 500;
 const MAX_CONCURRENT = 3;
 const PROXY_URL = '/api/handles-status';
+
+function parseStatusResponse(data: GatewayResponse): HandleStatusMap {
+  const map: HandleStatusMap = {};
+  for (const entry of data.payload.statuses) {
+    map[entry.handle] = entry.resolved;
+  }
+  return map;
+}
 
 export async function fetchHandleStatuses(
   handleIds: string[]
@@ -36,10 +46,8 @@ export async function fetchHandleStatuses(
             return partial;
           }
 
-          const data: Record<string, HandleStatus> = await res.json();
-          for (const [id, status] of Object.entries(data)) {
-            partial[id] = status.resolved;
-          }
+          const data: GatewayResponse = await res.json();
+          return { ...partial, ...parseStatusResponse(data) };
         } catch (err) {
           console.error('Gateway status fetch failed:', err);
           for (const id of batch) partial[id] = false;
@@ -65,8 +73,9 @@ export async function fetchSingleHandleStatus(
 
     if (!res.ok) return false;
 
-    const data: Record<string, HandleStatus> = await res.json();
-    return data[handleId]?.resolved ?? false;
+    const data: GatewayResponse = await res.json();
+    const statuses = parseStatusResponse(data);
+    return statuses[handleId] ?? false;
   } catch {
     return false;
   }
