@@ -1,3 +1,19 @@
+import { OPERATOR_COLORS } from './constants';
+
+export function hexToRgba(hex: string): [number, number, number, number] {
+  const c = hex.replace('#', '');
+  return [
+    parseInt(c.slice(0, 2), 16) / 255,
+    parseInt(c.slice(2, 4), 16) / 255,
+    parseInt(c.slice(4, 6), 16) / 255,
+    1,
+  ];
+}
+
+export function getOperatorColor(operator: string): string {
+  return OPERATOR_COLORS[operator] ?? OPERATOR_COLORS['Default'] ?? '#64748b';
+}
+
 export function truncateHex(hex: string, chars = 8): string {
   if (hex.length <= chars * 2 + 2) return hex;
   return `${hex.slice(0, chars + 2)}...${hex.slice(-chars)}`;

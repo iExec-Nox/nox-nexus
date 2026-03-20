@@ -4,7 +4,7 @@ import { useRef, useEffect, useMemo, useState } from 'react';
 import { Graph } from '@cosmos.gl/graph';
 import type { GraphNode, GraphEdge } from '@/lib/types';
 import { OPERATOR_COLORS } from '@/lib/constants';
-import { mixWithRed } from '@/lib/utils';
+import { hexToRgba, getOperatorColor, mixWithRed } from '@/lib/utils';
 import ZoomControls from './ZoomControls';
 
 interface GraphCanvasProps {
@@ -17,16 +17,6 @@ interface GraphCanvasProps {
   highlightedOperators: string[];
   focusNodeId: string | null;
   unresolvedNodeIds?: Set<string>;
-}
-
-function hexToRgba(hex: string): [number, number, number, number] {
-  const c = hex.replace('#', '');
-  return [
-    parseInt(c.slice(0, 2), 16) / 255,
-    parseInt(c.slice(2, 4), 16) / 255,
-    parseInt(c.slice(4, 6), 16) / 255,
-    1,
-  ];
 }
 
 const DIM_RGBA: [number, number, number, number] = [0.13, 0.13, 0.15, 0.3];
@@ -77,10 +67,9 @@ export default function GraphCanvas({
       simulationLinkDistance: 15,
       simulationDecay: 5000,
       curvedLinks: true,
-      fitViewOnInit: true,
-      fitViewDelay: 8000,
-      fitViewDuration: 1000,
-      fitViewPadding: 0.1,
+      linkArrows: true,
+      linkArrowsSizeScale: 4,
+      fitViewOnInit: false,
       enableDrag: true,
       hoveredPointCursor: 'pointer',
       renderHoveredPointRing: true,
@@ -115,10 +104,7 @@ export default function GraphCanvas({
     const colors = new Float32Array(nodes.length * 4);
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
-      let hex =
-        OPERATOR_COLORS[node.operator] ??
-        OPERATOR_COLORS['Default'] ??
-        '#64748b';
+      let hex = getOperatorColor(node.operator);
       if (unresolvedNodeIds?.has(node.id)) {
         hex = mixWithRed(hex, 0.5);
       }
@@ -194,10 +180,7 @@ export default function GraphCanvas({
 
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
-      let hex =
-        OPERATOR_COLORS[node.operator] ??
-        OPERATOR_COLORS['Default'] ??
-        '#64748b';
+      let hex = getOperatorColor(node.operator);
 
       if (unresolvedNodeIds?.has(node.id)) {
         hex = mixWithRed(hex, 0.5);

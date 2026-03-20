@@ -51,3 +51,8 @@ export interface SubgraphHandleResponse {
 export interface SubgraphHandlesResponse {
   handles: Handle[];
 }
+
+export interface TraceResult {
+  isHealthy: boolean;
+  patientZeros: { id: string; operator: string }[];
+}

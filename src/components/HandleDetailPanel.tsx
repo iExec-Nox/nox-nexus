@@ -13,8 +13,11 @@ import {
   CircleCheck,
   CircleAlert,
   Loader2,
+  Search,
+  AlertTriangle,
 } from 'lucide-react';
 import { Handle } from '@/lib/types';
+import type { TraceResult } from '@/lib/types';
 import { OPERATOR_COLORS, OPERATOR_LABELS } from '@/lib/constants';
 import { decodeHandle } from '@/lib/handle-decode';
 import { truncateHex } from '@/lib/utils';
@@ -26,6 +29,9 @@ interface HandleDetailPanelProps {
   onAddressSearch: (address: string) => void;
   isResolved: boolean | null;
   isLoadingStatus: boolean;
+  onTrace?: (handleId: string) => void;
+  traceResult?: TraceResult | null;
+  isTracing?: boolean;
 }
 
 function CopyableHex({ value }: { value: string }) {
@@ -93,6 +99,9 @@ export default function HandleDetailPanel({
   onAddressSearch,
   isResolved,
   isLoadingStatus,
+  onTrace,
+  traceResult,
+  isTracing,
 }: HandleDetailPanelProps) {
   const isOpen = handle !== null;
 
@@ -226,6 +235,56 @@ export default function HandleDetailPanel({
                   </span>
                 )}
               </div>
+
+              {onTrace && (
+                <div>
+                  <SectionLabel>Trace Origin</SectionLabel>
+                  {isTracing ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Tracing...
+                    </span>
+                  ) : traceResult ? (
+                    traceResult.isHealthy ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400 border border-emerald-500/20">
+                        <CircleCheck className="h-3.5 w-3.5" />
+                        Healthy chain
+                      </span>
+                    ) : (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-400 border border-amber-500/20">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          {traceResult.patientZeros.length} patient zero
+                          {traceResult.patientZeros.length > 1 ? 's' : ''}
+                        </span>
+                        {traceResult.patientZeros.map((pz) => (
+                          <button
+                            key={pz.id}
+                            onClick={() => onHandleClick(pz.id)}
+                            className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-surface)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-hover)] transition-colors"
+                          >
+                            <AlertTriangle className="h-3 w-3 text-amber-400" />
+                            <span className="font-[family-name:var(--font-mono)] text-[10px]">
+                              {truncateHex(pz.id, 4)}
+                            </span>
+                            <span className="text-[var(--color-text-muted)]">
+                              {pz.operator}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => onTrace(handle.id)}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-surface)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-accent)] transition-colors"
+                    >
+                      <Search className="h-3.5 w-3.5" />
+                      Find Patient Zero
+                    </button>
+                  )}
+                </div>
+              )}
 
               <div>
                 <SectionLabel>Publicly Decryptable</SectionLabel>

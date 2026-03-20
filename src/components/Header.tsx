@@ -30,6 +30,8 @@ interface HeaderProps {
   timeframeHours: number | null;
   onTimeframeChange: (hours: number | null) => void;
   isSearchActive?: boolean;
+  viewMode: 'explorer' | 'primitives';
+  onViewModeChange: (mode: 'explorer' | 'primitives') => void;
 }
 
 export default function Header({
@@ -48,6 +50,8 @@ export default function Header({
   timeframeHours,
   onTimeframeChange,
   isSearchActive,
+  viewMode,
+  onViewModeChange,
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-xl">
@@ -67,16 +71,29 @@ export default function Header({
             <span className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
               NOX <span className="text-[var(--color-accent)]">NEXUS</span>
             </span>
-            <span className="ml-1 rounded-full bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-medium text-[var(--color-accent)]">
-              EXPLORER
-            </span>
           </Link>
-          <Link
-            href="/trace"
-            className="rounded-full bg-[var(--color-surface)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors duration-150"
-          >
-            TRACE
-          </Link>
+          <div className="flex items-center gap-0.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-0.5">
+            <button
+              onClick={() => onViewModeChange('explorer')}
+              className={`rounded-md px-2 py-0.5 text-[10px] font-medium transition-all duration-150 ${
+                viewMode === 'explorer'
+                  ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent'
+              }`}
+            >
+              Handles
+            </button>
+            <button
+              onClick={() => onViewModeChange('primitives')}
+              className={`rounded-md px-2 py-0.5 text-[10px] font-medium transition-all duration-150 ${
+                viewMode === 'primitives'
+                  ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent'
+              }`}
+            >
+              Primitives
+            </button>
+          </div>
         </div>
 
         <div className="relative w-full max-w-md mx-8">

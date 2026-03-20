@@ -82,6 +82,7 @@ export function useHandleData(
     nodes,
     edges,
     operatorCounts,
+    handleStatuses,
     isLoadingStatuses,
     unresolvedCount,
     unresolvedNodeIds,
