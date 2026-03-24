@@ -1,0 +1,34 @@
+name: Default
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}-ci
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-fund
+
+      - name: Check formatting
+        run: npm run check-format
+
+      - name: Build
+        run: npm run build
+
+      - name: Check dependency licenses
+        run: |
+          npx license-checker --onlyAllow \
+            "MIT;Apache-2.0;ISC;LGPL-3.0-or-later;CC-BY-4.0;CC0-1.0;UNLICENSED;BSD-3-Clause;BSD-2-Clause;0BSD;Python-2.0;MPL-2.0;BlueOak-1.0.0"

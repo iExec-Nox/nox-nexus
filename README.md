@@ -114,6 +114,10 @@ src/
     └── ZoomControls.tsx              # Zoom in/out/reset controls
 ```
 
+## License
+
+This project is licensed under the [MIT License](./LICENSE) © iExec.
+
 ## Getting Started
 
 ```bash
