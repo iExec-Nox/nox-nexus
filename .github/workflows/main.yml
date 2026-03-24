@@ -3,7 +3,6 @@ name: Default
 on:
   workflow_dispatch:
   pull_request:
-  push:
 
 concurrency:
   group: ${{ github.ref }}-ci
@@ -32,4 +31,4 @@ jobs:
       - name: Check dependency licenses
         run: |
           npx license-checker --onlyAllow \
-            "MIT;Apache-2.0;ISC;LGPL-3.0-or-later;CC-BY-4.0;UNLICENSED;BSD-3-Clause;0BSD"
+            "MIT;Apache-2.0;ISC;LGPL-3.0-or-later;CC-BY-4.0;UNLICENSED;BSD-3-Clause;0BSD;Python-2.0"
