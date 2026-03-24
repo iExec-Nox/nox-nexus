@@ -1,26 +1,33 @@
-name: License Check
+name: Default
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
-    branches: [main]
 
 concurrency:
-  group: ${{ github.ref }}-license-check
+  group: ${{ github.ref }}-ci
   cancel-in-progress: true
 
 jobs:
-  license-check:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
 
-      - run: npm ci --omit=dev
+      - name: Install dependencies
+        run: npm ci --no-fund
+
+      - name: Check formatting
+        run: npm run check-format
+
+      - name: Build
+        run: npm run build
 
       - name: Check dependency licenses
         run: |
