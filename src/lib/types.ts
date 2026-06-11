@@ -13,6 +13,9 @@ export interface Handle {
   childHandles: Handle[];
   roles: HandleRole[];
   transactionHash: string | null;
+  // Resolution status sourced from Postgres (nox-observer `resolved_at`). Absent
+  // on handles fetched from the subgraph (where it is queried separately).
+  resolved?: boolean;
 }
 
 export interface HandleRole {
@@ -56,3 +59,7 @@ export interface TraceResult {
   isHealthy: boolean;
   patientZeros: { id: string; operator: string }[];
 }
+
+// Maps a handle id to its resolution status (true = resolved). Sourced from
+// Postgres (nox-observer `resolved_at`).
+export type HandleStatusMap = Record<string, boolean>;

@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import type { Handle } from '@/lib/types';
-import { fetchHandleById, fetchHandlesByIds } from '@/lib/subgraph';
-import { fetchHandleStatuses, fetchSingleHandleStatus } from '@/lib/gateway';
+import { fetchHandlesByIds } from '@/lib/handles-client';
 
 const INITIAL_DEPTH = 3;
 const LOAD_MORE_DEPTH = 3;
@@ -48,22 +47,20 @@ function computePatientZeros(
 
 async function bfsStep(
   state: BfsState,
-  maxDepth: number
+  maxDepth: number,
+  chainId: number
 ): Promise<{ traced: TraceNode[]; newState: BfsState }> {
   const { visited, traced } = state;
   let { frontier, depth } = state;
   const newTraced = [...traced];
 
   while (frontier.length > 0 && depth <= maxDepth) {
-    const [handles, statuses] = await Promise.all([
-      fetchHandlesByIds(frontier),
-      fetchHandleStatuses(frontier),
-    ]);
+    const handles = await fetchHandlesByIds(chainId, frontier);
 
     const nextFrontier: string[] = [];
 
     for (const h of handles) {
-      const isResolved = statuses[h.id] ?? false;
+      const isResolved = h.resolved ?? false;
       newTraced.push({
         handle: h,
         depth,
@@ -89,7 +86,7 @@ async function bfsStep(
   };
 }
 
-export function useTrace() {
+export function useTrace(chainId: number) {
   const [queriedHandle, setQueriedHandle] = useState<Handle | null>(null);
   const [queriedResolved, setQueriedResolved] = useState<boolean | null>(null);
   const [isQueriedPatientZero, setIsQueriedPatientZero] = useState(false);
@@ -103,60 +100,66 @@ export function useTrace() {
   const queriedHandleRef = useRef<Handle | null>(null);
   const queriedResolvedRef = useRef<boolean>(false);
 
-  const trace = useCallback(async (handleId: string) => {
-    setIsTracing(true);
-    setError(null);
-    setQueriedHandle(null);
-    setQueriedResolved(null);
-    setIsQueriedPatientZero(false);
-    setAncestors([]);
-    setHasMore(false);
-    bfsStateRef.current = null;
+  const trace = useCallback(
+    async (handleId: string) => {
+      setIsTracing(true);
+      setError(null);
+      setQueriedHandle(null);
+      setQueriedResolved(null);
+      setIsQueriedPatientZero(false);
+      setAncestors([]);
+      setHasMore(false);
+      bfsStateRef.current = null;
 
-    try {
-      const [handle, resolved] = await Promise.all([
-        fetchHandleById(handleId),
-        fetchSingleHandleStatus(handleId),
-      ]);
+      try {
+        const seed = await fetchHandlesByIds(chainId, [handleId]);
+        const handle = seed[0] ?? null;
+        const resolved = handle?.resolved ?? false;
 
-      if (!handle) {
-        setError('Handle not found');
-        return;
+        if (!handle) {
+          setError('Handle not found');
+          return;
+        }
+
+        setQueriedHandle(handle);
+        setQueriedResolved(resolved);
+        queriedHandleRef.current = handle;
+        queriedResolvedRef.current = resolved;
+
+        const visited = new Set<string>([handleId]);
+        const frontier = handle.parentHandles
+          .map((p) => p.id)
+          .filter((id) => !visited.has(id));
+        frontier.forEach((id) => visited.add(id));
+
+        const initialState: BfsState = {
+          frontier,
+          visited,
+          depth: 1,
+          traced: [],
+        };
+
+        const { traced, newState } = await bfsStep(
+          initialState,
+          INITIAL_DEPTH,
+          chainId
+        );
+
+        const isQPZ = computePatientZeros(traced, handle, resolved);
+        setIsQueriedPatientZero(isQPZ);
+        setAncestors([...traced]);
+        bfsStateRef.current = newState;
+        setHasMore(
+          newState.frontier.length > 0 && newState.depth <= MAX_TRACE_DEPTH
+        );
+      } catch {
+        setError('Failed to trace handle');
+      } finally {
+        setIsTracing(false);
       }
-
-      setQueriedHandle(handle);
-      setQueriedResolved(resolved);
-      queriedHandleRef.current = handle;
-      queriedResolvedRef.current = resolved;
-
-      const visited = new Set<string>([handleId]);
-      const frontier = handle.parentHandles
-        .map((p) => p.id)
-        .filter((id) => !visited.has(id));
-      frontier.forEach((id) => visited.add(id));
-
-      const initialState: BfsState = {
-        frontier,
-        visited,
-        depth: 1,
-        traced: [],
-      };
-
-      const { traced, newState } = await bfsStep(initialState, INITIAL_DEPTH);
-
-      const isQPZ = computePatientZeros(traced, handle, resolved);
-      setIsQueriedPatientZero(isQPZ);
-      setAncestors([...traced]);
-      bfsStateRef.current = newState;
-      setHasMore(
-        newState.frontier.length > 0 && newState.depth <= MAX_TRACE_DEPTH
-      );
-    } catch {
-      setError('Failed to trace handle');
-    } finally {
-      setIsTracing(false);
-    }
-  }, []);
+    },
+    [chainId]
+  );
 
   const loadMore = useCallback(async () => {
     const state = bfsStateRef.current;
@@ -168,7 +171,8 @@ export function useTrace() {
       const targetDepth = state.depth + LOAD_MORE_DEPTH;
       const { traced, newState } = await bfsStep(
         state,
-        Math.min(targetDepth, MAX_TRACE_DEPTH)
+        Math.min(targetDepth, MAX_TRACE_DEPTH),
+        chainId
       );
 
       const isQPZ = computePatientZeros(
@@ -187,7 +191,7 @@ export function useTrace() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, []);
+  }, [chainId]);
 
   const reset = useCallback(() => {
     setQueriedHandle(null);

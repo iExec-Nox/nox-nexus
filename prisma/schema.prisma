@@ -1,0 +1,48 @@
+// Prisma schema for nox-nexus.
+//
+// This schema is a READ-ONLY mirror of the Postgres database owned and migrated
+// by `nox-observer` (see .https://github.com/iExec-Nox/nox-observer/tree/main/sql). 
+// nox-nexus never writes
+// to this database and never runs Prisma migrations against it: the models here
+// only describe the existing tables so the Prisma Client can query them.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // The connection URL is configured in prisma.config.ts (CLI) and passed to the
+  // PrismaPg adapter at runtime (see src/lib/prisma.ts).
+}
+
+/// Materialized handle state. Mirrors the `handles` table.
+model Handle {
+  handleId            String    @id @map("handle_id")
+  chainId             Int       @map("chain_id")
+  operator            String
+  caller              String?
+  txHash              String?   @map("tx_hash")
+  blockTimestamp      DateTime? @map("block_timestamp") @db.Timestamptz(6)
+  blockNumber         BigInt?   @map("block_number")
+  resolvedAt          DateTime? @map("resolved_at") @db.Timestamptz(6)
+  processedBySubgraph Boolean   @default(false) @map("processed_by_subgraph")
+  processedByS3       Boolean   @default(false) @map("processed_by_s3")
+  processedByNats     Boolean   @default(false) @map("processed_by_nats")
+
+  @@index([chainId])
+  @@map("handles")
+}
+
+/// Parent -> child relationship between handles. Mirrors the `handle_parents`
+/// junction table. Foreign keys are intentionally NOT enforced on the observer
+/// side, so we model these as plain columns without Prisma relations.
+model HandleParent {
+  childHandleId  String @map("child_handle_id")
+  parentHandleId String @map("parent_handle_id")
+
+  @@id([childHandleId, parentHandleId])
+  @@index([parentHandleId])
+  @@map("handle_parents")
+}

@@ -1,8 +1,36 @@
-export const SUBGRAPH_URL =
-  'https://thegraph.arbitrum-sepolia-testnet.noxprotocol.io/api/subgraphs/id/BjQAX2HpmsSAzURJimKDhjZZnkSJtaczA8RPumggrStb';
+export interface ChainConfig {
+  chainId: number;
+  name: string;
+  // Subgraph endpoint for this chain. Used on demand (handle detail, address
+  // search) for fields the observer database does not store: roles, plaintext,
+  // isPubliclyDecryptable. Bulk graph data comes from Postgres instead.
+  subgraphUrl: string;
+}
 
-export const GATEWAY_URL =
-  'https://2e1800fc0dddeeadc189283ed1dce13c1ae28d48-3000.apps.ovh-tdx-dev.noxprotocol.dev';
+// Chains served by nox-observer (multichain via handles.chain_id). Keep the
+// chainId keys aligned with the observer's NOX_OBSERVER_SUBGRAPH__CHAINS__<id>.
+export const CHAINS: ChainConfig[] = [
+  {
+    chainId: 421614,
+    name: 'Arbitrum Sepolia',
+    subgraphUrl:
+      'https://thegraph.arbitrum-sepolia-testnet.noxprotocol.io/api/subgraphs/id/BjQAX2HpmsSAzURJimKDhjZZnkSJtaczA8RPumggrStb',
+  },
+  {
+    // chainId matches the observer's NOX_OBSERVER_SUBGRAPH__CHAINS__1 key, which
+    // is what gets written to handles.chain_id for this network.
+    chainId: 1,
+    name: 'Ethereum Sepolia',
+    subgraphUrl:
+      'https://thegraph.ethereum-sepolia-testnet.noxprotocol.io/api/subgraphs/id/9CsccKwvgYFo72zZeU4k4wj2NEBLdWhVE3EUandgmzgo',
+  },
+];
+
+export const DEFAULT_CHAIN_ID = CHAINS[0].chainId;
+
+export function getChain(chainId: number): ChainConfig {
+  return CHAINS.find((c) => c.chainId === chainId) ?? CHAINS[0];
+}
 
 export const OPERATOR_COLORS: Record<string, string> = {
   PlaintextToEncrypted: '#c084fc', // bright lavender

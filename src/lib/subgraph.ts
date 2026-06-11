@@ -1,33 +1,28 @@
 import { GraphQLClient, gql } from 'graphql-request';
-import { SUBGRAPH_URL } from './constants';
-import type {
-  Handle,
-  SubgraphHandleResponse,
-  SubgraphHandlesResponse,
-} from './types';
+import { getChain } from './constants';
+import type { Handle, SubgraphHandleResponse } from './types';
 
-const client = new GraphQLClient(SUBGRAPH_URL);
+// The subgraph is now only used on demand, for data the nox-observer Postgres
+// database does not store:
+//   - fetchHandleById: roles / plaintext / isPubliclyDecryptable for the detail
+//     panel when a handle is opened.
+//   - fetchHandleIdsByAccount: address search (handleRoles are subgraph-only).
+// All bulk graph/relationship/status data comes from Postgres (see handles-repo
+// and the /api routes).
 
-const HANDLES_QUERY = gql`
-  query FetchHandles($first: Int!, $skip: Int!) {
-    handles(first: $first, skip: $skip, orderBy: id) {
-      id
-      isPubliclyDecryptable
-      plaintext
-      operator
-      blockTimestamp
-      transactionHash
-      parentHandles {
-        id
-        operator
-      }
-      childHandles {
-        id
-        operator
-      }
-    }
+const PAGE_SIZE = 1000;
+
+const clients = new Map<string, GraphQLClient>();
+
+function clientFor(chainId: number): GraphQLClient {
+  const { subgraphUrl } = getChain(chainId);
+  let client = clients.get(subgraphUrl);
+  if (!client) {
+    client = new GraphQLClient(subgraphUrl);
+    clients.set(subgraphUrl, client);
   }
-`;
+  return client;
+}
 
 const HANDLE_BY_ID_QUERY = gql`
   query FetchHandleById($id: Bytes!) {
@@ -59,54 +54,6 @@ const HANDLE_BY_ID_QUERY = gql`
   }
 `;
 
-const HANDLES_SINCE_QUERY = gql`
-  query FetchHandlesSince($timestampGte: BigInt!, $first: Int!, $skip: Int!) {
-    handles(
-      first: $first
-      skip: $skip
-      orderBy: blockTimestamp
-      orderDirection: desc
-      where: { blockTimestamp_gte: $timestampGte }
-    ) {
-      id
-      isPubliclyDecryptable
-      plaintext
-      operator
-      blockTimestamp
-      transactionHash
-      parentHandles {
-        id
-        operator
-      }
-      childHandles {
-        id
-        operator
-      }
-    }
-  }
-`;
-
-const HANDLES_BY_IDS_QUERY = gql`
-  query FetchHandlesByIds($ids: [Bytes!]!, $first: Int!, $skip: Int!) {
-    handles(first: $first, skip: $skip, where: { id_in: $ids }) {
-      id
-      isPubliclyDecryptable
-      plaintext
-      operator
-      blockTimestamp
-      transactionHash
-      parentHandles {
-        id
-        operator
-      }
-      childHandles {
-        id
-        operator
-      }
-    }
-  }
-`;
-
 const HANDLES_BY_ACCOUNT_QUERY = gql`
   query FetchHandlesByAccount($account: Bytes!, $first: Int!, $skip: Int!) {
     handleRoles(
@@ -121,164 +68,11 @@ const HANDLES_BY_ACCOUNT_QUERY = gql`
   }
 `;
 
-const HANDLES_BY_TX_HASH_QUERY = gql`
-  query FetchHandlesByTxHash($txHash: Bytes!, $first: Int!, $skip: Int!) {
-    handles(first: $first, skip: $skip, where: { transactionHash: $txHash }) {
-      id
-      isPubliclyDecryptable
-      plaintext
-      operator
-      blockTimestamp
-      transactionHash
-      parentHandles {
-        id
-        operator
-      }
-      childHandles {
-        id
-        operator
-      }
-    }
-  }
-`;
-
-const PAGE_SIZE = 1000;
-
-async function fetchHandles(
-  first: number = PAGE_SIZE,
-  skip: number = 0
-): Promise<Handle[]> {
-  const data = await client.request<SubgraphHandlesResponse>(HANDLES_QUERY, {
-    first,
-    skip,
-  });
-  return data.handles;
-}
-
-export async function fetchAllHandlesPaginated(): Promise<Handle[]> {
-  const allHandles: Handle[] = [];
-  let skip = 0;
-
-  while (true) {
-    const batch = await fetchHandles(PAGE_SIZE, skip);
-    allHandles.push(...batch);
-
-    if (batch.length < PAGE_SIZE) {
-      break;
-    }
-
-    skip += PAGE_SIZE;
-  }
-
-  return allHandles;
-}
-
-const ID_BATCH_SIZE = 100; // subgraph _in filter limit
-
-export async function fetchHandlesByIds(ids: string[]): Promise<Handle[]> {
-  const allHandles: Handle[] = [];
-
-  for (let i = 0; i < ids.length; i += ID_BATCH_SIZE) {
-    const batchIds = ids.slice(i, i + ID_BATCH_SIZE);
-    let batchSkip = 0;
-
-    while (true) {
-      const data = await client.request<SubgraphHandlesResponse>(
-        HANDLES_BY_IDS_QUERY,
-        {
-          ids: batchIds,
-          first: PAGE_SIZE,
-          skip: batchSkip,
-        }
-      );
-
-      allHandles.push(...data.handles);
-      if (data.handles.length < PAGE_SIZE) break;
-      batchSkip += PAGE_SIZE;
-    }
-  }
-
-  return allHandles;
-}
-
-export async function fetchHandlesSince(
-  sinceTimestamp: number
-): Promise<Handle[]> {
-  const allHandles: Handle[] = [];
-  let skip = 0;
-
-  while (true) {
-    const data = await client.request<SubgraphHandlesResponse>(
-      HANDLES_SINCE_QUERY,
-      {
-        timestampGte: sinceTimestamp.toString(),
-        first: PAGE_SIZE,
-        skip,
-      }
-    );
-
-    allHandles.push(...data.handles);
-    if (data.handles.length < PAGE_SIZE) break;
-    skip += PAGE_SIZE;
-  }
-
-  return allHandles;
-}
-
-export async function fetchHandlesByTxHash(txHash: string): Promise<Handle[]> {
-  const allHandles: Handle[] = [];
-  let skip = 0;
-
-  while (true) {
-    const data = await client.request<SubgraphHandlesResponse>(
-      HANDLES_BY_TX_HASH_QUERY,
-      {
-        txHash: txHash.toLowerCase(),
-        first: PAGE_SIZE,
-        skip,
-      }
-    );
-
-    allHandles.push(...data.handles);
-    if (data.handles.length < PAGE_SIZE) break;
-    skip += PAGE_SIZE;
-  }
-
-  return allHandles;
-}
-
-// --------------- Handle chain ---------------
-
-const MAX_CHAIN_DEPTH = 20;
-
-export async function fetchHandleChain(seedIds: string[]): Promise<Handle[]> {
-  const fetched = new Map<string, Handle>();
-  let toFetch = [...new Set(seedIds)];
-  let depth = 0;
-
-  while (toFetch.length > 0 && depth < MAX_CHAIN_DEPTH) {
-    const handles = await fetchHandlesByIds(toFetch);
-    for (const h of handles) fetched.set(h.id, h);
-
-    const nextIds = new Set<string>();
-    for (const h of handles) {
-      for (const p of h.parentHandles ?? []) {
-        if (!fetched.has(p.id)) nextIds.add(p.id);
-      }
-      for (const c of h.childHandles ?? []) {
-        if (!fetched.has(c.id)) nextIds.add(c.id);
-      }
-    }
-
-    toFetch = [...nextIds];
-    depth++;
-  }
-
-  return Array.from(fetched.values());
-}
-
-export async function fetchHandleById(id: string): Promise<Handle | null> {
-  const data = await client.request<SubgraphHandleResponse>(
+export async function fetchHandleById(
+  chainId: number,
+  id: string
+): Promise<Handle | null> {
+  const data = await clientFor(chainId).request<SubgraphHandleResponse>(
     HANDLE_BY_ID_QUERY,
     { id }
   );
@@ -286,13 +80,14 @@ export async function fetchHandleById(id: string): Promise<Handle | null> {
 }
 
 export async function fetchHandleIdsByAccount(
+  chainId: number,
   account: string
 ): Promise<string[]> {
   const allIds: string[] = [];
   let skip = 0;
 
   while (true) {
-    const data = await client.request<{
+    const data = await clientFor(chainId).request<{
       handleRoles: { handle: { id: string } }[];
     }>(HANDLES_BY_ACCOUNT_QUERY, {
       account: account.toLowerCase(),

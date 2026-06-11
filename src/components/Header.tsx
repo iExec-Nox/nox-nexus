@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, RefreshCw, Hexagon, Clock, X } from 'lucide-react';
+import { Search, RefreshCw, Hexagon, Clock, X, Network } from 'lucide-react';
+import { CHAINS } from '@/lib/constants';
 
 const TIMEFRAME_OPTIONS: { value: number | null; label: string }[] = [
   { value: 1, label: '1h' },
@@ -32,6 +33,8 @@ interface HeaderProps {
   isSearchActive?: boolean;
   viewMode: 'explorer' | 'primitives';
   onViewModeChange: (mode: 'explorer' | 'primitives') => void;
+  chainId: number;
+  onChainChange: (chainId: number) => void;
 }
 
 export default function Header({
@@ -52,6 +55,8 @@ export default function Header({
   isSearchActive,
   viewMode,
   onViewModeChange,
+  chainId,
+  onChainChange,
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-deep)]/80 backdrop-blur-xl">
@@ -156,6 +161,21 @@ export default function Header({
               </button>
             </div>
           )}
+          <div className="relative flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-0.5 pl-2">
+            <Network className="h-3 w-3 text-[var(--color-text-muted)]" />
+            <select
+              value={chainId}
+              onChange={(e) => onChainChange(Number(e.target.value))}
+              className="cursor-pointer appearance-none bg-transparent py-1 pl-1 pr-2 text-[10px] font-medium text-[var(--color-text-secondary)] outline-none transition-colors hover:text-[var(--color-accent)]"
+              title="Select chain"
+            >
+              {CHAINS.map((c) => (
+                <option key={c.chainId} value={c.chainId}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div
             className={`flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-0.5 transition-opacity duration-200 ${isSearchActive ? 'opacity-35 pointer-events-none' : ''}`}
             title={

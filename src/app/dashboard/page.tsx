@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { ALL_OPERATORS } from '@/lib/constants';
+import { ALL_OPERATORS, getChain } from '@/lib/constants';
 import { isEthAddress, isTxHash } from '@/lib/search';
 import { useHandleData } from '@/lib/use-handle-data';
 import { useHandleFiltering } from '@/lib/use-handle-filtering';
@@ -68,7 +68,9 @@ function Dashboard() {
       : initialTimeframe
         ? Number(initialTimeframe) || DEFAULT_TIMEFRAME_HOURS
         : DEFAULT_TIMEFRAME_HOURS;
+  const initialChainId = getChain(Number(searchParams.get('chainId'))).chainId;
 
+  const [chainId, setChainId] = useState<number>(initialChainId);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedOperators, setSelectedOperators] = useState<string[]>([
     ...ALL_OPERATORS,
@@ -102,8 +104,9 @@ function Dashboard() {
     } else {
       params.set('timeframe', String(timeframeHours));
     }
+    params.set('chainId', String(chainId));
     router.replace(`/dashboard?${params.toString()}`, { scroll: false });
-  }, [searchQuery, timeframeHours, router]);
+  }, [searchQuery, timeframeHours, chainId, router]);
 
   const {
     handleCount,
@@ -116,7 +119,7 @@ function Dashboard() {
     isLoadingStatuses,
     unresolvedCount,
     unresolvedNodeIds,
-  } = useHandleData(timeframeHours, true);
+  } = useHandleData(timeframeHours, chainId, true);
 
   const {
     filteredNodes,
@@ -131,7 +134,8 @@ function Dashboard() {
     edges,
     searchQuery,
     selectedOperators,
-    txOnlyMode
+    txOnlyMode,
+    chainId
   );
 
   const {
@@ -141,7 +145,7 @@ function Dashboard() {
     isLoadingSelectedStatus,
     selectNode,
     clearSelection,
-  } = useNodeSelection();
+  } = useNodeSelection(chainId);
 
   // Inline trace (patient zero detection)
   const {
@@ -151,7 +155,7 @@ function Dashboard() {
     queriedResolved: traceQueriedResolved,
     isTracing,
     trace,
-  } = useTrace();
+  } = useTrace(chainId);
 
   const [tracedHandleId, setTracedHandleId] = useState<string | null>(null);
 
@@ -231,6 +235,18 @@ function Dashboard() {
     setSelectedOperators([]);
   }, []);
 
+  const handleChainChange = useCallback(
+    (newChainId: number) => {
+      if (newChainId === chainId) return;
+      setChainId(newChainId);
+      // Handle ids/graph are chain-specific; clear any active search/selection.
+      setSearchQuery('');
+      setTracedHandleId(null);
+      clearSelection();
+    },
+    [chainId, clearSelection]
+  );
+
   const handleReset = useCallback(() => {
     setSearchQuery('');
     setSelectedOperators([...ALL_OPERATORS]);
@@ -267,6 +283,8 @@ function Dashboard() {
         isSearchActive={isSearchActive}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        chainId={chainId}
+        onChainChange={handleChainChange}
       />
 
       <div className="relative flex flex-1 overflow-hidden">
