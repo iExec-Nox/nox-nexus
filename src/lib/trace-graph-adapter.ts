@@ -1,6 +1,5 @@
-import type { Handle, GraphNode, GraphEdge } from './types';
+import type { Handle, GraphNode, GraphEdge, HandleStatusMap } from './types';
 import type { TraceNode } from './use-trace';
-import type { HandleStatusMap } from './gateway';
 
 export interface TraceOpNode {
   id: string;

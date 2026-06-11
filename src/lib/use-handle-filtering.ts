@@ -1,11 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import type { Handle, GraphNode, GraphEdge } from '@/lib/types';
-import {
-  fetchHandleById,
-  fetchHandleIdsByAccount,
-  fetchHandlesByTxHash,
-  fetchHandleChain,
-} from '@/lib/subgraph';
+import { fetchHandleById, fetchHandleIdsByAccount } from '@/lib/subgraph';
+import { fetchHandlesByTxHash, fetchHandleChain } from '@/lib/handles-client';
 import { buildGraph } from '@/lib/graph-adapter';
 import { isEthAddress, isTxHash } from '@/lib/search';
 
@@ -14,7 +10,8 @@ export function useHandleFiltering(
   allEdges: GraphEdge[],
   searchQuery: string,
   selectedOperators: string[],
-  txOnlyMode: boolean
+  txOnlyMode: boolean,
+  chainId: number
 ) {
   const [addressFilterIds, setAddressFilterIds] = useState<Set<string> | null>(
     null
@@ -46,25 +43,25 @@ export function useHandleFiltering(
       try {
         if (isEthAddress(q)) {
           setTxFilterIds(null);
-          const ids = await fetchHandleIdsByAccount(q);
+          const ids = await fetchHandleIdsByAccount(chainId, q);
           if (cancelled) return;
           setAddressFilterIds(new Set(ids));
           if (ids.length === 0) {
             setChainHandles([]);
             return;
           }
-          const chain = await fetchHandleChain(ids);
+          const chain = await fetchHandleChain(chainId, ids);
           if (!cancelled) setChainHandles(chain);
         } else if (isTxHash(q)) {
           setAddressFilterIds(null);
-          const handle = await fetchHandleById(q);
+          const handle = await fetchHandleById(chainId, q);
           if (cancelled) return;
           if (handle) {
             setTxFilterIds(null);
-            const chain = await fetchHandleChain([handle.id]);
+            const chain = await fetchHandleChain(chainId, [handle.id]);
             if (!cancelled) setChainHandles(chain);
           } else {
-            const txHandles = await fetchHandlesByTxHash(q);
+            const txHandles = await fetchHandlesByTxHash(chainId, q);
             if (cancelled) return;
             const ids = txHandles.map((h) => h.id);
             setTxFilterIds(new Set(ids));
@@ -75,7 +72,7 @@ export function useHandleFiltering(
             if (txOnlyMode) {
               setChainHandles(txHandles);
             } else {
-              const chain = await fetchHandleChain(ids);
+              const chain = await fetchHandleChain(chainId, ids);
               if (!cancelled) setChainHandles(chain);
             }
           }
@@ -100,7 +97,7 @@ export function useHandleFiltering(
             setChainHandles(null);
             return;
           }
-          const chain = await fetchHandleChain([seedId]);
+          const chain = await fetchHandleChain(chainId, [seedId]);
           if (!cancelled) setChainHandles(chain);
         }
       } catch {
@@ -122,7 +119,7 @@ export function useHandleFiltering(
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [searchQuery, txOnlyMode]);
+  }, [searchQuery, txOnlyMode, chainId]);
 
   const chainGraph = useMemo(() => {
     if (!chainHandles) return null;

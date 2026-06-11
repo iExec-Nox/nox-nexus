@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { GraphNode, GraphEdge } from '@/lib/types';
-import { fetchHandleStatuses, type HandleStatusMap } from '@/lib/gateway';
+import type { GraphNode, GraphEdge, HandleStatusMap } from '@/lib/types';
 
 interface GraphApiResponse {
   nodes: GraphNode[];
   edges: GraphEdge[];
   operatorCounts: Record<string, number>;
+  statuses: HandleStatusMap;
   meta: {
     handleCount: number;
     computedAt: number;
@@ -14,6 +14,7 @@ interface GraphApiResponse {
 
 export function useHandleData(
   timeframeHours: number | null,
+  chainId: number,
   enabled: boolean = true
 ) {
   const [nodes, setNodes] = useState<GraphNode[]>([]);
@@ -23,7 +24,6 @@ export function useHandleData(
     {}
   );
   const [handleStatuses, setHandleStatuses] = useState<HandleStatusMap>({});
-  const [isLoadingStatuses, setIsLoadingStatuses] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadHandles = useCallback(async () => {
@@ -32,33 +32,26 @@ export function useHandleData(
     try {
       const timeframe =
         timeframeHours === null ? 'all' : String(timeframeHours);
-      const res = await fetch(`/api/graph/${timeframe}`);
+      const res = await fetch(`/api/graph/${timeframe}?chainId=${chainId}`);
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       const data: GraphApiResponse = await res.json();
       setNodes(data.nodes);
       setEdges(data.edges);
       setHandleCount(data.meta.handleCount);
       setOperatorCounts(data.operatorCounts);
+      // Resolution status now arrives with the graph (sourced from Postgres),
+      // so no separate gateway request is needed.
+      setHandleStatuses(data.statuses ?? {});
     } catch (err) {
       console.error('Failed to fetch graph:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [timeframeHours, enabled]);
+  }, [timeframeHours, chainId, enabled]);
 
   useEffect(() => {
     loadHandles();
   }, [loadHandles]);
-
-  useEffect(() => {
-    setHandleStatuses({});
-    if (nodes.length === 0) return;
-    const ids = nodes.map((n) => n.id);
-    setIsLoadingStatuses(true);
-    fetchHandleStatuses(ids)
-      .then(setHandleStatuses)
-      .finally(() => setIsLoadingStatuses(false));
-  }, [nodes]);
 
   const unresolvedNodeIds = useMemo(
     () =>
@@ -83,7 +76,7 @@ export function useHandleData(
     edges,
     operatorCounts,
     handleStatuses,
-    isLoadingStatuses,
+    isLoadingStatuses: false,
     unresolvedCount,
     unresolvedNodeIds,
   };
