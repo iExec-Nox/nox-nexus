@@ -1,12 +1,12 @@
 # Nox Nexus
 
-Interactive graph explorer for the Nox Protocol. Visualizes encrypted handle operations, their relationships, and operator activity from the on-chain subgraph.
+Interactive graph explorer for the Nox Protocol. Visualizes encrypted handle operations, their relationships, and operator activity across supported networks (Arbitrum Sepolia, Ethereum Sepolia).
 
 ## Tech Stack
 
 - **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS v4
 - **Graph Rendering**: cosmos.gl (WebGL, GPU-accelerated force layout + rendering)
-- **Data Source**: GraphQL subgraph (on-chain handle events), Handle Gateway (resolution status)
+- **Data Source**: Hasura GraphQL API over the nox-observer database (handles, relationships, resolution status), subgraph (ACL roles only)
 - **Deployment**: Vercel (Team plan)
 
 ## Pages
@@ -16,6 +16,7 @@ Interactive graph explorer for the Nox Protocol. Visualizes encrypted handle ope
 Graph explorer with real-time visualization of handle operations. Features:
 
 - **Graph canvas**: force-directed layout rendered via cosmos.gl (WebGL)
+- **Network selector**: switch between Arbitrum Sepolia and Ethereum Sepolia
 - **Search**: by handle ID, Ethereum address, or transaction hash
 - **Operator filters**: toggle visibility per operator type (sidebar)
 - **Timeframe selector**: 1h, 2h, 6h, 24h, 48h (default), 7d, 30d, All
@@ -37,11 +38,11 @@ Handle computation tracer. Enter a handle ID to trace its ancestry back to the "
 
 The app uses a two-layer data architecture:
 
-1. **API routes** (server-side): fetch from the subgraph and gateway, build the graph, cache with ISR
-2. **Client hooks**: call the API routes, manage UI state
+1. **API routes** (server-side): fetch handles from Hasura, build the graph, cache with ISR
+2. **Client hooks**: call the API routes (graph) and Hasura/subgraph directly (search, detail, trace), manage UI state
 
 ```text
-GET /api/graph/48
+GET /api/graph/421614/48
 
   Cache fresh (< 2 min)
     CDN edge responds directly                     ~50ms
@@ -50,13 +51,13 @@ GET /api/graph/48
     CDN serves stale data, background revalidation:
     ┌──────────────────────────────────────────┐
     │ Vercel Function                          │
-    │  1. Fetch handles from subgraph          │
+    │  1. Fetch handles from Hasura            │
     │  2. Build graph (nodes/edges)            │
     │  3. Return JSON (cached at CDN edge)     │
     └──────────────────────────────────────────┘
 
   No cache (first request)
-    Vercel Function computes on-demand             ~5-15s
+    Vercel Function computes on-demand
     Result cached, subsequent requests instant
 ```
 
@@ -68,7 +69,9 @@ GET /api/graph/48
 
 **Client-side layout.** cosmos.gl handles force-directed layout on the GPU. The server builds the graph (nodes/edges with sizes and colors), the client positions them with WebGL.
 
-**Handle statuses fetched client-side.** After the graph loads, statuses are batch-fetched from the gateway proxy (`/api/handles-status`) in the background without blocking the initial render.
+**Resolution status ships with the graph.** The observer database stores `resolved_at` per handle, so each node carries its resolution status. No separate status round-trip.
+
+**Subgraph for ACL only.** Handle roles (ADMIN/VIEWER) and address search come from the per-chain subgraph, which is the only place ACL data is indexed. The detail panel loads it as a non-blocking enrichment.
 
 **ISR with `revalidate = 120`.** Built into Next.js. One export on the route handler. No cron, no blob storage, no separate cache layer.
 
@@ -86,17 +89,16 @@ src/
 │   ├── trace/
 │   │   └── page.tsx                   # Handle trace page
 │   └── api/
-│       ├── graph/[timeframe]/
-│       │   └── route.ts              # Graph data endpoint (ISR cached)
-│       └── handles-status/
-│           └── route.ts              # Gateway proxy for handle resolution
+│       └── graph/[chainId]/[timeframe]/
+│           └── route.ts              # Graph data endpoint (ISR cached)
 ├── lib/
-│   ├── subgraph.ts                   # GraphQL queries + paginated fetching
-│   ├── gateway.ts                    # Handle status batch checking
+│   ├── chains.ts                     # Supported networks, Hasura + subgraph URLs, explorers
+│   ├── hasura.ts                     # Hasura GraphQL queries + paginated fetching
+│   ├── subgraph.ts                   # Subgraph queries (ACL roles, address search)
 │   ├── graph-adapter.ts             # Handle data -> graph nodes/edges
 │   ├── handle-decode.ts             # Decode type, chain ID, version from handle bytes
 │   ├── types.ts                     # TypeScript interfaces
-│   ├── constants.ts                 # Operators, colors, API URLs, graph sizing
+│   ├── constants.ts                 # Operators, colors, graph sizing
 │   ├── search.ts                    # Search query validators (address, tx hash)
 │   ├── utils.ts                     # Shared utilities (truncateHex, mixWithRed)
 │   ├── use-handle-data.ts           # Hook: graph data fetching + status resolution
@@ -104,7 +106,7 @@ src/
 │   ├── use-node-selection.ts        # Hook: selected node detail panel state
 │   └── use-trace.ts                 # Hook: BFS upward traversal for trace page
 └── components/
-    ├── Header.tsx                    # Nav bar, search, timeframe selector
+    ├── Header.tsx                    # Nav bar, network selector, search, timeframe selector
     ├── Sidebar.tsx                   # Operator filter panel
     ├── GraphCanvas.tsx               # cosmos.gl graph renderer
     ├── GraphStats.tsx                # Node/edge count display

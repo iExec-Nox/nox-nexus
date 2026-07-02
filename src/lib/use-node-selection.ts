@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { Handle } from '@/lib/types';
-import { fetchHandleById } from '@/lib/subgraph';
-import { fetchSingleHandleStatus } from '@/lib/gateway';
+import { fetchHandleById } from '@/lib/hasura';
+import { fetchHandleEnrichment } from '@/lib/subgraph';
 
-export function useNodeSelection() {
+export function useNodeSelection(chainId: number) {
   const [selectedHandle, setSelectedHandle] = useState<Handle | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedHandleResolved, setSelectedHandleResolved] = useState<
@@ -11,26 +11,45 @@ export function useNodeSelection() {
   >(null);
   const [isLoadingSelectedStatus, setIsLoadingSelectedStatus] = useState(false);
 
-  const selectNode = useCallback(async (nodeId: string) => {
-    setSelectedNodeId(nodeId);
-    setSelectedHandleResolved(null);
-    setIsLoadingSelectedStatus(true);
-    try {
-      const [full, resolved] = await Promise.all([
-        fetchHandleById(nodeId),
-        fetchSingleHandleStatus(nodeId),
-      ]);
-      setSelectedHandle(full);
-      setSelectedHandleResolved(resolved);
-    } catch {
-      setSelectedHandle(null);
+  // Guards against a slow request overwriting a newer selection
+  const requestIdRef = useRef(0);
+
+  const selectNode = useCallback(
+    async (nodeId: string) => {
+      const requestId = ++requestIdRef.current;
+      setSelectedNodeId(nodeId);
       setSelectedHandleResolved(null);
-    } finally {
-      setIsLoadingSelectedStatus(false);
-    }
-  }, []);
+      setIsLoadingSelectedStatus(true);
+      try {
+        const handle = await fetchHandleById(nodeId);
+        if (requestId !== requestIdRef.current) return;
+        setSelectedHandle(handle);
+        setSelectedHandleResolved(handle?.isResolved ?? null);
+        setIsLoadingSelectedStatus(false);
+
+        if (!handle) return;
+
+        // ACL data lives in the subgraph only; enrich after the fact so the
+        // panel still works when the subgraph is unavailable.
+        try {
+          const enrichment = await fetchHandleEnrichment(chainId, nodeId);
+          if (requestId !== requestIdRef.current) return;
+          if (enrichment) setSelectedHandle({ ...handle, ...enrichment });
+        } catch {
+          // keep the base handle
+        }
+      } catch {
+        if (requestId !== requestIdRef.current) return;
+        setSelectedHandle(null);
+        setSelectedHandleResolved(null);
+        setIsLoadingSelectedStatus(false);
+      }
+    },
+    [chainId]
+  );
 
   const clearSelection = useCallback(() => {
+    requestIdRef.current++;
     setSelectedNodeId(null);
     setSelectedHandle(null);
   }, []);

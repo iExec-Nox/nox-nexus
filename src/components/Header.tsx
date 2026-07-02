@@ -1,7 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, RefreshCw, Hexagon, Clock, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import {
+  Search,
+  RefreshCw,
+  Hexagon,
+  Clock,
+  X,
+  Globe,
+  ChevronDown,
+  Check,
+} from 'lucide-react';
+import { CHAINS, getChain } from '@/lib/chains';
 
 const TIMEFRAME_OPTIONS: { value: number | null; label: string }[] = [
   { value: 1, label: '1h' },
@@ -14,7 +25,69 @@ const TIMEFRAME_OPTIONS: { value: number | null; label: string }[] = [
   { value: null, label: 'All' },
 ];
 
+function NetworkSelector({
+  chainId,
+  onChainChange,
+}: {
+  chainId: number;
+  onChainChange: (chainId: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="flex h-7 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-2 text-[10px] font-medium text-[var(--color-text-secondary)] transition-all duration-150 hover:border-[var(--color-accent-dim)] hover:text-[var(--color-text-primary)]"
+      >
+        <Globe className="h-3 w-3 text-[var(--color-text-muted)]" />
+        {getChain(chainId).name}
+        <ChevronDown
+          className={`h-3 w-3 text-[var(--color-text-muted)] transition-transform duration-150 ${
+            open ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-[var(--color-border)] bg-[var(--color-deep)]/95 p-1 backdrop-blur-xl shadow-lg">
+          {CHAINS.map((chain) => (
+            <button
+              key={chain.chainId}
+              onClick={() => {
+                onChainChange(chain.chainId);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-[11px] font-medium transition-colors duration-150 ${
+                chain.chainId === chainId
+                  ? 'text-[var(--color-accent)]'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-text-primary)]'
+              }`}
+            >
+              {chain.name}
+              {chain.chainId === chainId && <Check className="h-3 w-3" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface HeaderProps {
+  chainId: number;
+  onChainChange: (chainId: number) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onReset?: () => void;
@@ -35,6 +108,8 @@ interface HeaderProps {
 }
 
 export default function Header({
+  chainId,
+  onChainChange,
   searchQuery,
   onSearchChange,
   onReset,
@@ -94,6 +169,7 @@ export default function Header({
               Primitives
             </button>
           </div>
+          <NetworkSelector chainId={chainId} onChainChange={onChainChange} />
         </div>
 
         <div className="relative w-full max-w-md mx-8">

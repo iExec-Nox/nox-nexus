@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { GraphNode, GraphEdge } from '@/lib/types';
-import { fetchHandleStatuses, type HandleStatusMap } from '@/lib/gateway';
+import type { GraphNode, GraphEdge, HandleStatusMap } from '@/lib/types';
 
 interface GraphApiResponse {
   nodes: GraphNode[];
@@ -13,6 +12,7 @@ interface GraphApiResponse {
 }
 
 export function useHandleData(
+  chainId: number,
   timeframeHours: number | null,
   enabled: boolean = true
 ) {
@@ -22,8 +22,6 @@ export function useHandleData(
   const [operatorCounts, setOperatorCounts] = useState<Record<string, number>>(
     {}
   );
-  const [handleStatuses, setHandleStatuses] = useState<HandleStatusMap>({});
-  const [isLoadingStatuses, setIsLoadingStatuses] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadHandles = useCallback(async () => {
@@ -32,7 +30,7 @@ export function useHandleData(
     try {
       const timeframe =
         timeframeHours === null ? 'all' : String(timeframeHours);
-      const res = await fetch(`/api/graph/${timeframe}`);
+      const res = await fetch(`/api/graph/${chainId}/${timeframe}`);
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       const data: GraphApiResponse = await res.json();
       setNodes(data.nodes);
@@ -44,35 +42,27 @@ export function useHandleData(
     } finally {
       setIsLoading(false);
     }
-  }, [timeframeHours, enabled]);
+  }, [chainId, timeframeHours, enabled]);
 
   useEffect(() => {
+    setNodes([]);
+    setEdges([]);
+    setHandleCount(0);
+    setOperatorCounts({});
     loadHandles();
   }, [loadHandles]);
 
-  useEffect(() => {
-    setHandleStatuses({});
-    if (nodes.length === 0) return;
-    const ids = nodes.map((n) => n.id);
-    setIsLoadingStatuses(true);
-    fetchHandleStatuses(ids)
-      .then(setHandleStatuses)
-      .finally(() => setIsLoadingStatuses(false));
+  // Resolution statuses ship with the graph payload (resolved_at in the
+  // observer database), no separate gateway round-trip needed.
+  const handleStatuses = useMemo<HandleStatusMap>(() => {
+    const map: HandleStatusMap = {};
+    for (const node of nodes) map[node.id] = node.resolved;
+    return map;
   }, [nodes]);
 
   const unresolvedNodeIds = useMemo(
-    () =>
-      new Set(
-        Object.entries(handleStatuses)
-          .filter(([, resolved]) => resolved === false)
-          .map(([id]) => id)
-      ),
-    [handleStatuses]
-  );
-
-  const unresolvedCount = useMemo(
-    () => Object.values(handleStatuses).filter((r) => r === false).length,
-    [handleStatuses]
+    () => new Set(nodes.filter((n) => !n.resolved).map((n) => n.id)),
+    [nodes]
   );
 
   return {
@@ -83,8 +73,7 @@ export function useHandleData(
     edges,
     operatorCounts,
     handleStatuses,
-    isLoadingStatuses,
-    unresolvedCount,
+    unresolvedCount: unresolvedNodeIds.size,
     unresolvedNodeIds,
   };
 }

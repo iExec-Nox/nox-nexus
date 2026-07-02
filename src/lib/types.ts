@@ -3,21 +3,27 @@ export enum Role {
   VIEWER = 'VIEWER',
 }
 
+export interface HandleRef {
+  id: string;
+  operator: string;
+}
+
 export interface Handle {
   id: string;
-  isPubliclyDecryptable: boolean;
-  plaintext: string | null;
   operator: string;
   blockTimestamp: string | null;
-  parentHandles: Handle[];
-  childHandles: Handle[];
-  roles: HandleRole[];
   transactionHash: string | null;
+  isResolved: boolean;
+  parentHandles: HandleRef[];
+  childHandles: HandleRef[];
+  // ACL enrichment fetched from the subgraph; absent when it is unavailable
+  isPubliclyDecryptable?: boolean;
+  plaintext?: string | null;
+  roles?: HandleRole[];
 }
 
 export interface HandleRole {
   id: string;
-  handle: Handle;
   account: string;
   role: Role;
   grantedBy: string;
@@ -26,13 +32,15 @@ export interface HandleRole {
   transactionHash: string;
 }
 
+export type HandleStatusMap = Record<string, boolean>;
+
 export interface GraphNode {
   id: string;
   label: string;
   size: number;
   color: string;
   operator: string;
-  isPubliclyDecryptable: boolean;
+  resolved: boolean;
   connectionCount: number;
 }
 
@@ -42,14 +50,6 @@ export interface GraphEdge {
   target: string;
   color: string;
   size: number;
-}
-
-export interface SubgraphHandleResponse {
-  handle: Handle | null;
-}
-
-export interface SubgraphHandlesResponse {
-  handles: Handle[];
 }
 
 export interface TraceResult {

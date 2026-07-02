@@ -19,10 +19,12 @@ import {
 import { Handle } from '@/lib/types';
 import type { TraceResult } from '@/lib/types';
 import { OPERATOR_COLORS, OPERATOR_LABELS } from '@/lib/constants';
+import { getChain } from '@/lib/chains';
 import { decodeHandle } from '@/lib/handle-decode';
 import { truncateHex } from '@/lib/utils';
 
 interface HandleDetailPanelProps {
+  chainId: number;
   handle: Handle | null;
   onClose: () => void;
   onHandleClick: (id: string) => void;
@@ -93,6 +95,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 export default function HandleDetailPanel({
+  chainId,
   handle,
   onClose,
   onHandleClick,
@@ -288,7 +291,8 @@ export default function HandleDetailPanel({
 
               <div>
                 <SectionLabel>Publicly Decryptable</SectionLabel>
-                {handle.isPubliclyDecryptable || info?.unique === false ? (
+                {(handle.isPubliclyDecryptable ?? false) ||
+                info?.unique === false ? (
                   <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400">
                     <ShieldCheck className="h-3.5 w-3.5" />
                     Yes
@@ -301,7 +305,7 @@ export default function HandleDetailPanel({
                 )}
               </div>
 
-              {handle.plaintext !== null && (
+              {handle.plaintext != null && (
                 <div>
                   <SectionLabel>Plaintext</SectionLabel>
                   <div className="rounded-md bg-[var(--color-surface)] px-3 py-2 font-[family-name:var(--font-mono)] text-xs text-emerald-300 break-all">
@@ -315,7 +319,9 @@ export default function HandleDetailPanel({
                   <SectionLabel>Transaction</SectionLabel>
                   <div className="inline-flex items-center gap-1">
                     <a
-                      href={`https://sepolia.arbiscan.io/tx/${handle.transactionHash}`}
+                      href={getChain(chainId).explorerTxUrl(
+                        handle.transactionHash
+                      )}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-surface)] px-2 py-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-accent)] transition-colors duration-150 hover:bg-[var(--color-hover)]"
@@ -396,7 +402,7 @@ export default function HandleDetailPanel({
                 </div>
               )}
 
-              {handle.roles.length > 0 && (
+              {handle.roles && handle.roles.length > 0 && (
                 <div>
                   <SectionLabel>Roles ({handle.roles.length})</SectionLabel>
                   <div className="overflow-x-auto rounded-md border border-[var(--color-border)]">
