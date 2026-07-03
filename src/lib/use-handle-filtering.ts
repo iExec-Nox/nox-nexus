@@ -2,14 +2,15 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import type { Handle, GraphNode, GraphEdge } from '@/lib/types';
 import {
   fetchHandleById,
-  fetchHandleIdsByAccount,
   fetchHandlesByTxHash,
   fetchHandleChain,
-} from '@/lib/subgraph';
+} from '@/lib/hasura';
+import { fetchHandleIdsByAccount } from '@/lib/subgraph';
 import { buildGraph } from '@/lib/graph-adapter';
 import { isEthAddress, isTxHash } from '@/lib/search';
 
 export function useHandleFiltering(
+  chainId: number,
   allNodes: GraphNode[],
   allEdges: GraphEdge[],
   searchQuery: string,
@@ -46,7 +47,7 @@ export function useHandleFiltering(
       try {
         if (isEthAddress(q)) {
           setTxFilterIds(null);
-          const ids = await fetchHandleIdsByAccount(q);
+          const ids = await fetchHandleIdsByAccount(chainId, q);
           if (cancelled) return;
           setAddressFilterIds(new Set(ids));
           if (ids.length === 0) {
@@ -64,7 +65,7 @@ export function useHandleFiltering(
             const chain = await fetchHandleChain([handle.id]);
             if (!cancelled) setChainHandles(chain);
           } else {
-            const txHandles = await fetchHandlesByTxHash(q);
+            const txHandles = await fetchHandlesByTxHash(chainId, q);
             if (cancelled) return;
             const ids = txHandles.map((h) => h.id);
             setTxFilterIds(new Set(ids));
@@ -122,7 +123,7 @@ export function useHandleFiltering(
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [searchQuery, txOnlyMode]);
+  }, [searchQuery, txOnlyMode, chainId]);
 
   const chainGraph = useMemo(() => {
     if (!chainHandles) return null;

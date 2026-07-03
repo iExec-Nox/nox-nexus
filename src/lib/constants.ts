@@ -1,9 +1,3 @@
-export const SUBGRAPH_URL =
-  'https://thegraph.arbitrum-sepolia-testnet.noxprotocol.io/api/subgraphs/id/BjQAX2HpmsSAzURJimKDhjZZnkSJtaczA8RPumggrStb';
-
-export const GATEWAY_URL =
-  'https://2e1800fc0dddeeadc189283ed1dce13c1ae28d48-3000.apps.ovh-tdx-dev.noxprotocol.dev';
-
 export const OPERATOR_COLORS: Record<string, string> = {
   PlaintextToEncrypted: '#c084fc', // bright lavender
   Add: '#3b82f6', // blue

@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import type { Handle } from '@/lib/types';
-import { fetchHandleById, fetchHandlesByIds } from '@/lib/subgraph';
-import { fetchHandleStatuses, fetchSingleHandleStatus } from '@/lib/gateway';
+import { fetchHandleById, fetchHandlesByIds } from '@/lib/hasura';
 
 const INITIAL_DEPTH = 3;
 const LOAD_MORE_DEPTH = 3;
@@ -55,15 +54,12 @@ async function bfsStep(
   const newTraced = [...traced];
 
   while (frontier.length > 0 && depth <= maxDepth) {
-    const [handles, statuses] = await Promise.all([
-      fetchHandlesByIds(frontier),
-      fetchHandleStatuses(frontier),
-    ]);
+    const handles = await fetchHandlesByIds(frontier);
 
     const nextFrontier: string[] = [];
 
     for (const h of handles) {
-      const isResolved = statuses[h.id] ?? false;
+      const isResolved = h.isResolved;
       newTraced.push({
         handle: h,
         depth,
@@ -114,15 +110,13 @@ export function useTrace() {
     bfsStateRef.current = null;
 
     try {
-      const [handle, resolved] = await Promise.all([
-        fetchHandleById(handleId),
-        fetchSingleHandleStatus(handleId),
-      ]);
+      const handle = await fetchHandleById(handleId);
 
       if (!handle) {
         setError('Handle not found');
         return;
       }
+      const resolved = handle.isResolved;
 
       setQueriedHandle(handle);
       setQueriedResolved(resolved);

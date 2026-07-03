@@ -49,7 +49,7 @@ export function buildGraph(handles: Handle[]): {
       size: computeNodeSize(connectionCount),
       color,
       operator,
-      isPubliclyDecryptable: handle.isPubliclyDecryptable,
+      resolved: handle.isResolved,
       connectionCount,
     };
 

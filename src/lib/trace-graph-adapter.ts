@@ -1,6 +1,11 @@
-import type { Handle, GraphNode, GraphEdge } from './types';
+import type {
+  Handle,
+  HandleRef,
+  GraphNode,
+  GraphEdge,
+  HandleStatusMap,
+} from './types';
 import type { TraceNode } from './use-trace';
-import type { HandleStatusMap } from './gateway';
 
 export interface TraceOpNode {
   id: string;
@@ -77,8 +82,7 @@ export function buildTraceGraph(
   return { nodes: Array.from(nodeMap.values()), edges };
 }
 
-const EMPTY_HANDLES: Handle[] = [];
-const EMPTY_ROLES: Handle['roles'] = [];
+const EMPTY_REFS: HandleRef[] = [];
 
 export function buildPrimitivesGraph(
   nodes: GraphNode[],
@@ -104,14 +108,12 @@ export function buildPrimitivesGraph(
       handle: {
         id: e.target,
         operator: target?.operator ?? '',
-        isPubliclyDecryptable: target?.isPubliclyDecryptable ?? false,
-        plaintext: null,
         blockTimestamp: null,
         transactionHash: null,
-        parentHandles: EMPTY_HANDLES,
-        childHandles: EMPTY_HANDLES,
-        roles: EMPTY_ROLES,
-      } as Handle,
+        isResolved: statuses[e.target] ?? true,
+        parentHandles: EMPTY_REFS,
+        childHandles: EMPTY_REFS,
+      } satisfies Handle,
       isResolved: statuses[e.target] ?? true,
     };
   });
