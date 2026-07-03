@@ -186,10 +186,26 @@ export async function fetchHandlesSince(
   chainId: number,
   sinceTimestamp: number
 ): Promise<Handle[]> {
-  return fetchPaginated(HANDLES_SINCE_QUERY, {
+  const handles = await fetchPaginated(HANDLES_SINCE_QUERY, {
     chainId,
     since: new Date(sinceTimestamp * 1000).toISOString(),
   });
+
+  // One-hop closure: a handle inside the window can be linked to handles
+  // outside it (older parents, or NULL-timestamp handles whose relatives are
+  // timestamped). Pull those in so every in-window handle renders with its
+  // edges instead of appearing as a disconnected dot. Edges of the pulled-in
+  // handles pointing further out are dropped client-side.
+  const inSet = new Set(handles.map((h) => h.id));
+  const missing = new Set<string>();
+  for (const h of handles) {
+    for (const p of h.parentHandles) if (!inSet.has(p.id)) missing.add(p.id);
+    for (const c of h.childHandles) if (!inSet.has(c.id)) missing.add(c.id);
+  }
+  if (missing.size === 0) return handles;
+
+  const linked = await fetchHandlesByIds([...missing]);
+  return [...handles, ...linked];
 }
 
 const ID_BATCH_SIZE = 500;
